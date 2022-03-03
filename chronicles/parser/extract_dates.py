@@ -66,6 +66,37 @@ def extract_primitives(path, document_increment):
     return primitives
 
 
+def extract_dates_resolution(primitives):
+    pat_year_resolution = re.compile(r'\d{4}-xx-xx', flags=re.IGNORECASE)
+    pat_month_resolution = re.compile(r'\d{4}-\d{2}-xx', flags=re.IGNORECASE)
+    pat_day_resolution = re.compile(r'\d{4}-\d{2}-\d{2}', flags=re.IGNORECASE)
+
+    date_primitives = []
+    for page in primitives:
+
+        for tag in page['date']:
+
+            if pat_year_resolution.match(tag):
+                resolution = 'year'
+            elif pat_month_resolution.match(tag):
+                resolution = 'month'
+            elif pat_day_resolution.match(tag):
+                resolution = 'day'
+            else:
+                resolution = 'broken'
+            
+            date_record = {
+                'call_nr': page['call_nr'],
+                'date': tag,
+                'resolution': resolution
+            }
+            date_primitives.append(date_record)
+
+    df_date = pd.DataFrame(date_primitives)
+
+    return df_date
+
+
 # get filepaths
 # data_dir = '../../data/corpus_220222_corrected'
 data_dir = 'data/corpus_220222_corrected'
@@ -83,3 +114,6 @@ for path in tqdm(xml_paths):
 
 with open('data/primitives_220303/primitives.ndjson', 'w') as fout:
     ndjson.dump(chronicles, fout)
+
+df_date = extract_dates_resolution(chronicles)
+df_date.to_csv('data/primitives_220303/df_date.csv', index=False)
