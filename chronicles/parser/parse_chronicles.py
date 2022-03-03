@@ -165,3 +165,81 @@ for path in tqdm(xml_paths):
     chron = extract_primitives(path, document_increment='p')
     chronicles.append(chron)
 
+# %%
+###
+### document parser
+# ###
+# def delimitation_experiment_1(path):
+#     '''
+#     Document segmentation / delimitation: Experiment 1
+
+#     text corresponding to a primitive -> {date_1} document_1 {date_2} document_2
+#     '''
+
+path = '/Users/au582299/Repositories/dutch-chronicles/data/corpus_220222_corrected/1791_Purm_Louw_03.xml'
+
+with open(path, 'r') as f_in:
+    soup = BeautifulSoup(f_in, 'lxml')
+
+    increments = soup.find_all('p')
+
+# if you solve it for increment[2], then we're doing good
+
+increment_lines = increments[2].find_all('l')
+
+docs = []
+for t in increment_lines:
+    doc = []
+    # if datum is found, start a new doc
+    if t.find('datum'):
+        next
+    else:
+        doc.append(t)
+
+    docs.extend(doc)
+
+
+# %%
+### code to be used bellow
+
+# %%
+    # extract call_nr: {YYYY}_{LOCATION_TAG}_{AUTHOR_TAG}
+    title_tags = soup.find_all('title')
+    # check only one call_nr is present in file
+    assert len(title_tags) == 1
+    call_nr = title_tags[0].get_text()
+
+    # page numbers
+    page_nrs = [page_nr['n'] for page_nr in soup.find_all('pb')]
+
+    primitives = []
+    for page_nr, increment in zip(page_nrs, soup.find_all(document_increment)):
+        text_lines = [line.get_text() for line in increment.find_all('l')]
+
+        # catch multiple dates in a single increment
+        dates_in_increment = increment.find_all('datum')
+        if isinstance(dates_in_increment, list):
+
+            date_lines = []
+            for line in dates_in_increment:
+                if line.has_attr('datum'):
+                    date_tag_type = 'datum'
+                elif line.has_attr('when'):
+                    date_tag_type = 'when'
+                else: 
+                    # exception when date is tagged, but not annotated
+                    date_tag_type = None
+                
+                if date_tag_type:
+                    one_date = line[date_tag_type]
+                    date_lines.append(one_date)
+
+        else:
+            date_lines = dates_in_increment['datum']
+
+        primitives.append({
+            'call_nr': call_nr,
+            'page': page_nr,
+            'text': text_lines,
+            'date': date_lines
+        })
