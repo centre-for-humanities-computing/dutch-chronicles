@@ -75,7 +75,7 @@ def test_lxml_representation_agnosticism():
                 equal_parsing_paths.append(doc)
             except:
                 inequal_parsing_paths.append(doc)
-    
+
     assert len(equal_parsing_paths) == len(xml_paths)
 
 
@@ -83,13 +83,22 @@ def test_one_title_per_doc():
     '''
     There can only be one title (call_nr) per doc
     '''
-    pass
+    n_title_fields_corpus = 0
+
+    for doc in xml_paths:
+        with open(doc, 'r') as f_in:
+            soup = BeautifulSoup(f_in, 'lxml')
+            title_tags = soup.find_all('title')
+
+        n_title_fields_corpus += len(title_tags)
+
+    assert len(xml_paths) == n_title_fields_corpus
 
 
-def test_linebreaks():
-    '''
-    Have multi-line words been joined? ¬
+# def test_linebreaks():
+#     '''
+#     Have multi-line words been joined? ¬
 
-    Some chronicles were already digitized (no line breaks present).
-    '''
-    pass
+#     Some chronicles were already digitized (no line breaks present).
+#     '''
+#     pass

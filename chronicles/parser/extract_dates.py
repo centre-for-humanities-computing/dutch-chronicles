@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 import lxml
 
-# %%
+
 def extract_primitives(path, document_increment):
     '''
     Get all date annotations from a chronicle
@@ -21,15 +21,16 @@ def extract_primitives(path, document_increment):
 
         # extract call_nr: {YYYY}_{LOCATION_TAG}_{AUTHOR_TAG}
         title_tags = soup.find_all('title')
-        # check only one call_nr is present in file
-        assert len(title_tags) == 1
+        # one call_nr must be present in file (see tests/test_parsing)
         call_nr = title_tags[0].get_text()
 
         # page numbers
         page_nrs = [page_nr['n'] for page_nr in soup.find_all('pb')]
 
         primitives = []
-        for page_nr, increment in zip(page_nrs, soup.find_all(document_increment)):
+        # there must be same number of different document increments (see tests/test_parsing)
+        increments_list = soup.find_all(document_increment)
+        for page_nr, increment in zip(page_nrs, increments_list):
             text_lines = [line.get_text() for line in increment.find_all('l')]
 
             # catch multiple dates in a single increment
@@ -42,11 +43,12 @@ def extract_primitives(path, document_increment):
                         date_tag_type = 'datum'
                     elif line.has_attr('when'):
                         date_tag_type = 'when'
-                    else: 
+                    else:
                         # exception when date is tagged, but not annotated
                         date_tag_type = None
-                    
-                    one_date = line[date_tag_type] if date_tag_type else line.get_text()
+
+                    one_date = line[date_tag_type] if date_tag_type else line.get_text(
+                    )
                     date_lines.append(one_date)
 
             else:
@@ -62,7 +64,7 @@ def extract_primitives(path, document_increment):
                 'text': text_lines,
                 'date': date_lines
             })
-    
+
     return primitives
 
 
@@ -84,7 +86,7 @@ def extract_dates_resolution(primitives):
                 resolution = 'day'
             else:
                 resolution = 'broken'
-            
+
             date_record = {
                 'call_nr': page['call_nr'],
                 'date': tag,
