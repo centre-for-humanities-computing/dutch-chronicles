@@ -46,9 +46,8 @@ def extract_primitives(path, document_increment):
                         # exception when date is tagged, but not annotated
                         date_tag_type = None
                     
-                    if date_tag_type:
-                        one_date = line[date_tag_type]
-                        date_lines.append(one_date)
+                    one_date = line[date_tag_type] if date_tag_type else line.get_text()
+                    date_lines.append(one_date)
 
             else:
                 date_lines = dates_in_increment['datum']
