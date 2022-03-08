@@ -140,7 +140,8 @@ def parse_chronicle(path):
     increments = soup.find_all('l')
     res = delimitation_experiment1(increments)
     # add source
-    res = [doc.update({'call_nr': call_nr}) for doc in res]
+    # HACK i really don't like that it's inplace
+    [doc.update({'call_nr': call_nr}) for doc in res]
 
     return res
 
