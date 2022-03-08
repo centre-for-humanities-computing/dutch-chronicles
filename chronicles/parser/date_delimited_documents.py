@@ -6,7 +6,8 @@ Text corresponding to a primitive -> `{date_1} document_1 {date_2} document_2`
 '''
 # %%
 import os
-import re
+import ndjson
+from turtle import resetscreen
 from wasabi import msg
 
 import bs4
@@ -94,6 +95,10 @@ def delimitation_experiment1(increments):
             # this happens, when last increment contains a date
             #     a new partial doc is created in if dates_found:
             #     but, it is never added to the results list
+            #
+            #     TODO: when these two lines move to the back, 
+            #     number of documents increases by one (1791_Purm_Louw_03.xml).
+            #     Don't know why.
             if i+1 == len(increments):
                 docs.append(partial_doc)
 
@@ -119,14 +124,37 @@ def delimitation_experiment1(increments):
     return docs
 
 
+def parse_chronicle(path):
 
-path = '/Users/au582299/Repositories/dutch-chronicles/data/corpus_220222_corrected/1791_Purm_Louw_03.xml'
+    with open(path, 'r') as f_in:
+        soup = BeautifulSoup(f_in, 'lxml')
 
-with open(path, 'r') as f_in:
-    soup = BeautifulSoup(f_in, 'lxml')
+    # extract call_nr: {YYYY}_{LOCATION_TAG}_{AUTHOR_TAG}
+    title_tags = soup.find_all('title')
+    # one call_nr must be present in file (see tests/test_parsing)
+    call_nr = title_tags[0].get_text()
 
-increments = soup.find_all('l')
-res = delimitation_experiment1(increments)
-# 1366
+    increments = soup.find_all('l')
+    res = delimitation_experiment1(increments)
+    # add source
+    res = [doc.update({'call_nr': call_nr}) for doc in res]
+
+    return res
+
 
 # %%
+data_dir = 'data/corpus_220222_corrected'
+
+xml_paths = [os.path.join(data_dir, path)
+             for path in os.listdir(data_dir) if path.endswith('.xml')]
+
+all_events = []
+for path in tqdm(xml_paths):
+    try:
+        chron = parse_chronicle(path)
+        all_events.extend(chron)
+    except:
+        msg.fail(f'file failed: {path}')
+
+with open('data/primitives_220308/primitives.ndjson', 'w') as fout:
+    ndjson.dump(all_events, fout)
