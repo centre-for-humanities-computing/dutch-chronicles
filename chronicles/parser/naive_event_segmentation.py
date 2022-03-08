@@ -1,4 +1,8 @@
-# %%
+'''
+Naive event segmentation: 
+    - extract date tags
+    - label them by specificity (yearly / montly / daily)
+'''
 import os
 import pandas as pd
 import numpy as np
