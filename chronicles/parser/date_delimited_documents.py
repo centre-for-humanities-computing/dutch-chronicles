@@ -84,6 +84,9 @@ def delimitation_experiment1(increments):
             # text before date tag -> old partial_doc
             # text after date tag -> new partial_doc
 
+            # TODO
+            # also joining words that are on multiple lines...
+
             # start a NEW doc (bc date was found)
             partial_doc = {}
             text_content = [i.get_text() for i in line]
