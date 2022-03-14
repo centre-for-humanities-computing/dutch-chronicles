@@ -146,8 +146,10 @@ def parse_chronicle(path):
 # %%
 
 # create documents per event, and merge hyphen
-data_dir = '/Users/alielassche/documents/github/chronicling-topics/corpus/corpus_220222_annotated'
+import shutil
 
+data_dir = '/Users/alielassche/documents/github/chronicling-topics/corpus/corpus_220222_annotated'
+error_dir = '/Users/alielassche/documents/github/chronicling-topics/corpus/errors'
 os.chdir('/Users/alielassche/documents/github/chronicling-topics/corpus/txt')
 xml_paths = [os.path.join(data_dir, path)
              for path in os.listdir(data_dir) if path.endswith('.xml')]
@@ -157,17 +159,18 @@ for path in tqdm(xml_paths):
     try:
         chron = parse_chronicle(path)
         for i in range(len(chron)):
-            if chron[i]['date'] == 'NaN_before_date':
-                continue
-            else:
+            try:
                 chrontxt = chron[i]['text']
                 chrontxt = ' '.join(chrontxt)
                 chrontxt = re.sub(r"((¬#?) ?)", "", chrontxt)
-                filename = str(chron[i]['call_nr']) + '_' + str(chron[i]['date'])[2:-2] + '.txt'
+                filename = str(chron[i]['call_nr']) + '_' + str(chron[i]['date'])[2:12] + '.txt'
                 with open(filename, 'a', encoding='utf-8') as fileout:
                     fileout.write(chrontxt)
+            except:
+                continue
     except:
         msg.fail(f'file failed: {path}')
+        shutil.copy(path, error_dir)
 
     
 # %%
@@ -186,11 +189,11 @@ def is_punct(t):
 
 # %%
 
-# filter documents with more than 150 words and make mfw list with 250 most common words
+# filter documents with more than 10 words and make mfw list with 250 most common words
 
 words_total = []
 n = 0
-new_dir = ('/Users/alielassche/documents/github/chronicling-topics/corpus/txt_150')
+new_dir = ('/Users/alielassche/documents/github/chronicling-topics/corpus/txt_10')
 
 os.chdir('/Users/alielassche/documents/github/chronicling-topics/corpus/txt')
 for doc in glob.glob("*.txt"):
@@ -199,7 +202,7 @@ for doc in glob.glob("*.txt"):
     for sentence in TOKENIZER(text, language="dutch"):
         words.extend([w.lower() for w in sentence.split() if not is_punct(w)])
         words_total.extend([w.lower() for w in sentence.split() if not is_punct(w)])
-    if len(words) >= 150:
+    if len(words) >= 10:
         n += 1
         shutil.copy(doc, new_dir)
         print(n)
@@ -220,7 +223,7 @@ from gensim.models.wrappers import LdaMallet
 
 os.chdir('/Users/alielassche/documents/github/chronicling-topics/corpus')
 
-corpus_path = '/text_150/*.txt'
+corpus_path = '/txt_10/*.txt'
 stopwords_path = '/stopwords/stoplist.txt'
 stopwords = [s.lower() for s in open(stopwords_path, 'r', encoding='utf-8').read().splitlines()]
 
