@@ -210,25 +210,27 @@ print(n)
 
 fd = FreqDist(words_total)
 mfw = fd.most_common(250)
-MFW = csv.writer(open('../mfw_events.csv', 'w', encoding='utf-8'))
+
+# %%
+MFW = csv.writer(open('mfw_events.csv', 'w', encoding='utf-8'))
 for key, count in mfw:
     MFW.writerow([key, count])
 
 # %%
 
 # prepare corpus for topic modeling
-
+import glob
 import gensim
 from gensim.corpora import Dictionary
-from gensim.models.wrappers import LdaMallet
+# from gensim.models.wrappers import LdaMallet
 
-os.chdir('/Users/alielassche/documents/github/chronicling-topics/corpus')
+# os.chdir('/Users/alielassche/documents/github/chronicling-topics/corpus')
 
-corpus_path = '/txt_10/*.txt'
-stopwords_path = '/stopwords/stoplist.txt'
+corpus_path = '/work/corpus/txt_10/*.txt'
+stopwords_path = '/work/corpus/stoplist.txt'
 stopwords = [s.lower() for s in open(stopwords_path, 'r', encoding='utf-8').read().splitlines()]
 
-remove_stopwords = lambda x: [word.lower() for word in x if word.lower() not in stopwords and not is_punct(word) and len(word) > 1]
+remove_stopwords = lambda x: [word.lower() for word in x if word.lower() not in stopwords and not is_punct(word) and len(word) > 1 and isalpha(word)]
 
 texts = glob.glob(corpus_path, recursive=False)
 tokenized_texts = [TOKENIZER(open(text, "r", encoding="utf-8").read(), language="dutch") for text in texts]
@@ -256,8 +258,7 @@ dictionary.filter_extremes(no_below=no_below, no_above=no_above)
 corpus = [dictionary.doc2bow(text) for text in tokenized_texts]
 
 # %%
-lda = LdaMallet('/work/Mallet', 
-                corpus=corpus,
+lda = LdaModel( corpus=corpus,
                 id2word=dictionary,
                 num_topics=n_topics, 
                 iterations=iterations,  
