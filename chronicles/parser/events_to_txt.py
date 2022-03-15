@@ -193,9 +193,10 @@ def is_punct(t):
 
 words_total = []
 n = 0
-new_dir = ('/Users/alielassche/documents/github/chronicling-topics/corpus/txt_10')
+new_dir = ('/work/corpus/txt_10')
 
-os.chdir('/Users/alielassche/documents/github/chronicling-topics/corpus/txt')
+
+os.chdir('/work/corpus/txt')
 for doc in glob.glob("*.txt"):
     text = open(doc, "r", encoding="utf-8").read()
     words = []
@@ -205,7 +206,7 @@ for doc in glob.glob("*.txt"):
     if len(words) >= 10:
         n += 1
         shutil.copy(doc, new_dir)
-        print(n)
+print(n)
 
 fd = FreqDist(words_total)
 mfw = fd.most_common(250)
