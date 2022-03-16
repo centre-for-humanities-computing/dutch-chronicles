@@ -2,6 +2,7 @@
 import os
 import ndjson
 import re
+import shutil
 from turtle import resetscreen
 from wasabi import msg
 
@@ -146,7 +147,6 @@ def parse_chronicle(path):
 # %%
 
 # create documents per event, and merge hyphen
-import shutil
 
 data_dir = '/Users/alielassche/documents/github/chronicling-topics/corpus/corpus_220222_annotated'
 error_dir = '/Users/alielassche/documents/github/chronicling-topics/corpus/errors'
@@ -218,19 +218,22 @@ for key, count in mfw:
 
 # %%
 
-# prepare corpus for topic modeling
 import glob
 import gensim
 from gensim.corpora import Dictionary
-# from gensim.models.wrappers import LdaMallet
-
-# os.chdir('/Users/alielassche/documents/github/chronicling-topics/corpus')
+from gensim.models import LdaModel
+from gensim.models.coherencemodel import CoherenceModel
+import matplotlib.pyplot as plt
+import seaborn as sns
+plt.style.use('seaborn-whitegrid')
 
 corpus_path = '/work/corpus/txt_10/*.txt'
 stopwords_path = '/work/corpus/stoplist.txt'
 stopwords = [s.lower() for s in open(stopwords_path, 'r', encoding='utf-8').read().splitlines()]
 
-remove_stopwords = lambda x: [word.lower() for word in x if word.lower() not in stopwords and not is_punct(word) and len(word) > 1 and isalpha(word)]
+remove_stopwords = lambda x: [word.lower() for word in x if word.lower() not in stopwords and not is_punct(word) and len(word) > 1 and word.isalpha()]
+
+# %%
 
 texts = glob.glob(corpus_path, recursive=False)
 tokenized_texts = [TOKENIZER(open(text, "r", encoding="utf-8").read(), language="dutch") for text in texts]
@@ -238,20 +241,14 @@ tokenized_texts = [remove_stopwords(text) for text in tokenized_texts]
 
 # %%
 
-# settings topic model
-
 no_below = 2
 no_above = 1
 
 n_topics = 20
 iterations = 2000
-optimize_interval = 20
 eval_every = 3
-n_workers = 3
 
 # %%
-
-# create dictionary and corpus
 
 dictionary = Dictionary(tokenized_texts)
 dictionary.filter_extremes(no_below=no_below, no_above=no_above)
@@ -261,6 +258,48 @@ corpus = [dictionary.doc2bow(text) for text in tokenized_texts]
 lda = LdaModel( corpus=corpus,
                 id2word=dictionary,
                 num_topics=n_topics, 
+                iterations=iterations
+                )
+
+# %%
+
+# calculate coherence score
+
+cm = CoherenceModel(model=lda, corpus=corpus, texts=tokenized_texts, dictionary=dictionary, coherence ='c_v')
+coherence = cm.get_coherence()
+print('\nCoherence Score: ', coherence)
+
+# %%
+
+# calculate coherence score for range
+
+def compute_coherence_values(dictionary, corpus, texts, limit, start, step):
+
+    coherence_values = []
+    model_list = []
+    for num_topics in range(start, limit, step):
+        model = LdaModel(corpus=corpus,
+                id2word=dictionary,
+                num_topics=num_topics, 
                 iterations=iterations,  
-                workers=n_workers,
-                optimize_interval=optimize_interval)
+                )
+        model_list.append(model)
+        coherencemodel = CoherenceModel(model=model, texts=tokenized_texts, dictionary=dictionary, coherence='c_v')
+        coherence_values.append(coherencemodel.get_coherence())
+
+    return model_list, coherence_values
+
+# %%
+model_list, coherence_values = compute_coherence_values(
+                                dictionary=dictionary,
+                                corpus=corpus,
+                                texts=tokenized_texts,
+                                start=10, limit=55, step=5)
+
+limit=55; start=10; step=5
+x = range(start, limit, step)
+plt.plot(x, coherence_values)
+plt.xlabel("Number of topics")
+plt.ylabel("Coherence score")
+plt.legend(("coherence_values"), loc='best')
+plt.savefig('/work/dutch-chronicles/output/coherence_values.pdf')
