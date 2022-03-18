@@ -218,7 +218,8 @@ for key, count in mfw:
 
 # %%
 
-import glob
+# create tokenized corpus
+
 import gensim
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
@@ -226,6 +227,7 @@ from gensim.models.coherencemodel import CoherenceModel
 import matplotlib.pyplot as plt
 import seaborn as sns
 plt.style.use('seaborn-whitegrid')
+import pandas as pd
 
 corpus_path = '/work/corpus/txt_10/*.txt'
 stopwords_path = '/work/corpus/stoplist.txt'
@@ -240,21 +242,34 @@ tokenized_texts = [TOKENIZER(open(text, "r", encoding="utf-8").read(), language=
 tokenized_texts = [remove_stopwords(text) for text in tokenized_texts]
 
 # %%
+import ndjson
+
+with open('/work/corpus/tokenized_texts.ndjson', 'w') as fout:
+    ndjson.dump(tokenized_texts, fout)
+
+# %%
+
+# settings lda
 
 no_below = 2
 no_above = 1
 
-n_topics = 20
+n_topics = 25
 iterations = 2000
 eval_every = 3
 
 # %%
+
+# create corpus and dictionary
 
 dictionary = Dictionary(tokenized_texts)
 dictionary.filter_extremes(no_below=no_below, no_above=no_above)
 corpus = [dictionary.doc2bow(text) for text in tokenized_texts]
 
 # %%
+
+# train lda model
+
 lda = LdaModel( corpus=corpus,
                 id2word=dictionary,
                 num_topics=n_topics, 
@@ -265,13 +280,13 @@ lda = LdaModel( corpus=corpus,
 
 # calculate coherence score
 
-cm = CoherenceModel(model=lda, corpus=corpus, texts=tokenized_texts, dictionary=dictionary, coherence ='c_v')
+cm = CoherenceModel(lda, corpus=corpus, texts=tokenized_texts, dictionary=dictionary, coherence ='c_v')
 coherence = cm.get_coherence()
 print('\nCoherence Score: ', coherence)
 
 # %%
 
-# calculate coherence score for range
+# calculate coherence score for range of topics
 
 def compute_coherence_values(dictionary, corpus, texts, limit, start, step):
 
@@ -290,16 +305,55 @@ def compute_coherence_values(dictionary, corpus, texts, limit, start, step):
     return model_list, coherence_values
 
 # %%
+
 model_list, coherence_values = compute_coherence_values(
                                 dictionary=dictionary,
                                 corpus=corpus,
                                 texts=tokenized_texts,
-                                start=10, limit=55, step=5)
+                                start=10, limit=35, step=5)
 
-limit=55; start=10; step=5
+
+limit=35; start=10; step=5
 x = range(start, limit, step)
 plt.plot(x, coherence_values)
 plt.xlabel("Number of topics")
 plt.ylabel("Coherence score")
 plt.legend(("coherence_values"), loc='best')
-plt.savefig('/work/dutch-chronicles/output/coherence_values.pdf')
+plt.savefig('/work/dutch-chronicles/output/coherence_values_5.pdf')
+
+# save models
+
+model_list[0].save('/work/corpus/LDA/lda_10/lda_10')
+model_list[1].save('/work/corpus/LDA/lda_15/lda_15')
+model_list[2].save('/work/corpus/LDA/lda_20/lda_20')
+model_list[3].save('/work/corpus/LDA/lda_25/lda_25')
+model_list[4].save('/work/corpus/LDA/lda_30/lda_30')
+
+# %% 
+# load model
+
+lda = LdaModel.load('/work/corpus/LDA/lda_30/lda_30')
+
+# %%
+
+# analysis of the model
+
+rows = []
+for topic in range(0, 30):
+    words = lda.show_topic(topic, 30)
+    rows.append([str(topic), words])
+keys = pd.DataFrame(rows, columns=['topic', 'words'])
+
+# %%
+transformed_docs = lda.get_document_topics(corpus, minimum_probability=0)
+docs = [[texts[indx]] + [p[1] for p in doc] for indx, doc in enumerate(transformed_docs)]
+composition = pd.DataFrame(docs, columns=['document_id'] + ['topic {}'.format(x) for x in range(0, 30)])
+
+composition['document_id'] = composition['document_id'].str[20:-4]
+composition['date'] = composition['documentid'].str[-10:]
+# %%
+
+keys.to_csv('/work/dutch-chronicles/lda/keys.csv')
+composition.to_csv('/work/dutch-chronicles/lda/composition.csv')
+
+# %%
