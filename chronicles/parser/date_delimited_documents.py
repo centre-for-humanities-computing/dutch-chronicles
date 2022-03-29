@@ -6,6 +6,7 @@ Text corresponding to a primitive -> `{date_1} document_1 {date_2} document_2`
 '''
 # %%
 import os
+import re
 import ndjson
 from turtle import resetscreen
 from wasabi import msg
@@ -145,6 +146,26 @@ def parse_chronicle(path):
 
     return res
 
+def document_to_string(doc_list):
+    '''
+    convert text fields to text & merge multi-line words
+    '''
+    if not isinstance(doc_list, list):
+        doc_list = [doc_list]
+
+    updated_doc_list = []
+    for doc in doc_list:
+        # turn into a single string
+        doc['text'] = ' '.join(doc['text'])
+        
+        # merge multiline words
+        while re.search('0x00AC', doc['text']):
+            # remove space after linebreak
+            doc['text'] = re.sub(r'0x00AC\s', doc['text'])
+
+        updated_doc_list.append(doc)
+
+    return updated_doc_list
 
 # %%
 data_dir = 'data/corpus_220222_corrected'
@@ -156,9 +177,12 @@ all_events = []
 for path in tqdm(xml_paths):
     try:
         chron = parse_chronicle(path)
-        all_events.extend(chron)
+        chron_up = document_to_string(chron)
+        all_events.extend(chron_up)
     except:
         msg.fail(f'file failed: {path}')
 
-with open('data/primitives_220308/primitives.ndjson', 'w') as fout:
+with open('data/primitives_220329/primitives.ndjson', 'w') as fout:
     ndjson.dump(all_events, fout)
+
+# %%
