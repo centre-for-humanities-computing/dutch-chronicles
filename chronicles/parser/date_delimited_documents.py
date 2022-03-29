@@ -77,8 +77,9 @@ def delimitation_experiment1(increments):
             # use date tag extraction function to handle exception
             doc_date = extract_date_attr(dates_found)
 
-            # add cache (PREVIOUS doc) to results
-            docs.append(partial_doc)
+            if partial_doc:
+                # add cache (PREVIOUS doc) to results
+                docs.append(partial_doc)
 
             # TODO
             # here there should be splitting of the text in a single line
