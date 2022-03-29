@@ -82,11 +82,6 @@ def delimitation_experiment1(increments):
                 docs.append(partial_doc)
 
             # TODO
-            # here there should be splitting of the text in a single line
-            # text before date tag -> old partial_doc
-            # text after date tag -> new partial_doc
-
-            # TODO
             # also joining words that are on multiple lines...
 
             # start a NEW doc (bc date was found)
@@ -151,6 +146,9 @@ def document_to_string(doc_list):
     '''
     convert text fields to text & merge multi-line words
     '''
+    # hyphen pattern
+    pat_line_break = re.compile(r'¬\s+', re.UNICODE)
+
     if not isinstance(doc_list, list):
         doc_list = [doc_list]
 
@@ -160,16 +158,16 @@ def document_to_string(doc_list):
         doc['text'] = ' '.join(doc['text'])
         
         # merge multiline words
-        while re.search('0x00AC', doc['text']):
+        while re.search(pat_line_break, doc['text']):
             # remove space after linebreak
-            doc['text'] = re.sub(r'0x00AC\s', doc['text'])
+            doc['text'] = re.sub(pat_line_break, '', doc['text'])
 
         updated_doc_list.append(doc)
 
     return updated_doc_list
 
 # %%
-data_dir = 'data/corpus_220222_corrected'
+data_dir = 'data/corpus_220329_corrected'
 
 xml_paths = [os.path.join(data_dir, path)
              for path in os.listdir(data_dir) if path.endswith('.xml')]
@@ -183,7 +181,17 @@ for path in tqdm(xml_paths):
     except:
         msg.fail(f'file failed: {path}')
 
-with open('data/primitives_220329/primitives.ndjson', 'w') as fout:
+with open('data/primitives_220329/primitives_corrected.ndjson', 'w') as fout:
     ndjson.dump(all_events, fout)
 
 # %%
+# # test runs
+# data_dir = '/Users/au582299/Repositories/dutch-chronicles/data/corpus_220329_annotated'
+
+# xml_paths = [os.path.join(data_dir, path)
+#              for path in os.listdir(data_dir) if path.endswith('.xml')]
+
+# chron = parse_chronicle(xml_paths[1])
+# chron_up = document_to_string(chron)
+
+# # %%
