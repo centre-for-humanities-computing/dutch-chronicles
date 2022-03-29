@@ -103,23 +103,23 @@ def extract_dates_resolution(primitives):
     return df_date
 
 
-# get filepaths
-# data_dir = '../../data/corpus_220222_corrected'
-data_dir = 'data/corpus_220222_corrected'
+# # get filepaths
+# # data_dir = '../../data/corpus_220222_corrected'
+# data_dir = 'data/corpus_220222_corrected'
 
-xml_paths = [os.path.join(data_dir, path)
-             for path in os.listdir(data_dir) if path.endswith('.xml')]
+# xml_paths = [os.path.join(data_dir, path)
+#              for path in os.listdir(data_dir) if path.endswith('.xml')]
 
-chronicles = []
-for path in tqdm(xml_paths):
-    try:
-        chron = extract_primitives(path, document_increment='p')
-        chronicles.extend(chron)
-    except:
-        msg.fail(f'file failed: {path}')
+# chronicles = []
+# for path in tqdm(xml_paths):
+#     try:
+#         chron = extract_primitives(path, document_increment='p')
+#         chronicles.extend(chron)
+#     except:
+#         msg.fail(f'file failed: {path}')
 
-with open('data/primitives_220303/primitives.ndjson', 'w') as fout:
-    ndjson.dump(chronicles, fout)
+# with open('data/primitives_220303/primitives.ndjson', 'w') as fout:
+#     ndjson.dump(chronicles, fout)
 
-df_date = extract_dates_resolution(chronicles)
-df_date.to_csv('data/primitives_220303/df_date.csv', index=False)
+# df_date = extract_dates_resolution(chronicles)
+# df_date.to_csv('data/primitives_220303/df_date.csv', index=False)
