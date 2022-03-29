@@ -1,8 +1,8 @@
 ###
 ### INPUT PARAMS: change as you please!
 ###
-dir_corpus_corrected='../data/corpus_220329_annotated'
-dir_corpus_annotated='../data/corpus_220329_corrected'
+dir_corpus_annotated='../data/corpus_220329_annotated'
+dir_corpus_corrected='../data/corpus_220329_corrected'
 run_when='220330'
 
 
@@ -22,19 +22,19 @@ fi
 ### RUNNING
 ###
 
-# corpus annotated
+echo "Parsing corpus_annotated"
 python parser/xml_parsing.py \
     -d "${dir_corpus_annotated}" \
     -s 1 \
     -o "../data/primitives_${run_when}/primitives_annotated.ndjson"
 
-# corpus corrected
+echo "Parsing corpus_corrected"
 python parser/xml_parsing.py \
     -d "${dir_corpus_corrected}" \
     -s 1 \
     -o "../data/primitives_${run_when}/primitives_corrected.ndjson"
 
-# generate ids
+echo "Generating IDs"
 python parser/give_ids.py \
     -ap "../data/primitives_${run_when}/primitives_annotated.ndjson" \
     -cp "../data/primitives_${run_when}/primitives_corrected.ndjson"

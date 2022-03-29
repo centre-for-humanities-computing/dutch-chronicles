@@ -5,6 +5,7 @@ Requires both annotated & corrected corpus
 '''
 import os
 import ndjson
+from tqdm import tqdm
 
 
 def main(prim_anno, prim_corr):
@@ -30,7 +31,7 @@ def main(prim_anno, prim_corr):
 
     prim_corr_texts = [doc['text'] for doc in prim_corr]
     prim_corr_call_nrs = [doc['call_nr'] for doc in prim_corr]
-    prim_corr_fix = [doc for doc in prim_anno if doc['text']
+    prim_corr_fix = [doc for doc in tqdm(prim_anno) if doc['text']
                      in prim_corr_texts and doc['call_nr'] in prim_corr_call_nrs]
 
     assert(len(prim_corr) == len(prim_corr_fix))
@@ -54,8 +55,8 @@ if __name__ == "__main__":
 
     prim_anno_ids, prim_corr_ids = main(prim_anno, prim_corr)
 
-    with open(args['annotatedpath']) as fout:
+    with open(args['annotatedpath'], 'w') as fout:
         ndjson.dump(prim_anno_ids, fout)
 
-    with open(args['correctedpath']) as fout:
+    with open(args['correctedpath'], 'w') as fout:
         ndjson.dump(prim_corr_ids, fout)

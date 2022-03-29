@@ -10,8 +10,8 @@ from wasabi import msg
 from bs4 import BeautifulSoup
 import lxml
 
-from chronicles.parser.delimitation_strategies import delimitation_experiment1
-from chronicles.parser.delimitation_strategies import delimitation_experiment2
+from delimitation_strategies import delimitation_experiment1
+from delimitation_strategies import delimitation_experiment2
 
 
 def parse_chronicle(path, delimitation_strategy):
