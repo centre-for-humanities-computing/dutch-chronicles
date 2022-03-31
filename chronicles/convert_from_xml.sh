@@ -3,7 +3,7 @@
 ###
 dir_corpus_annotated='../data/corpus_220329_annotated'
 dir_corpus_corrected='../data/corpus_220329_corrected'
-run_when='220330'
+run_when='220331'
 
 
 ###
@@ -38,3 +38,8 @@ echo "Generating IDs"
 python parser/give_ids.py \
     -ap "../data/primitives_${run_when}/primitives_annotated.ndjson" \
     -cp "../data/primitives_${run_when}/primitives_corrected.ndjson"
+
+echo "Cleaning date tags on corrected corput"
+python misc/date_tag_resolutions.py \
+    -i "../data/primitives_${run_when}/primitives_corrected.ndjson" \
+    -o "../data/primitives_${run_when}/primitives_corrected_daily.ndjson"
