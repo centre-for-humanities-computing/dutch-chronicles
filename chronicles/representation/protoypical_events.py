@@ -54,12 +54,12 @@ import pandas as pd
 
 # representations
 ev = np.load(
-    '../../lda/representation_final_50.npy',
+    '../../../models/representation_final_50_reduced.npy',
     allow_pickle=True
     )
 
 # primitives
-path_primitives_daily = '../../data/primitives_220331/primitives_corrected_daily.ndjson'
+path_primitives_daily = '../../../corpus/primitives_220331/primitives_corrected_daily.ndjson'
 with open(path_primitives_daily) as fin:
     primitives_daily = ndjson.load(fin)
 
@@ -101,6 +101,9 @@ for doc in tqdm(sorted_prim):
 
 
 # %%
-with open('/Users/au582299/Repositories/dutch-chronicles/data/primitives_220331/events_repre.ndjson', 'w') as fout:
+with open('../../../corpus/primitives_220331/events_repre_reduced.ndjson', 'w') as fout:
     ndjson.dump(sorted_prim, fout)
 
+
+
+# %%
