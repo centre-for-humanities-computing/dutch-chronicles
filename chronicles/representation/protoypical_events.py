@@ -1,11 +1,4 @@
 '''
-Preproblem
-----------
-Documents are cosine similarities to topics.
-Why not just take their embedding?
-[DONE]
-
-
 Problem statement
 -----------------
 We have vectors representing text documents. 
@@ -110,93 +103,65 @@ d) Represent
 # %%
 import numpy as np
 from sklearn.metrics import pairwise_distances
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+
+from document_vectors import RepresentationHandler
 
 
 # %%
-def prototype_avg_d(representations, metric='cosine'):
-    
-    d = pairwise_distances(representations, metric=metric)
+class PrototypeHandler(RepresentationHandler):
+    def __init__(self) -> None:
+        pass
 
-    # mean distance to other docs
-    avg_d = np.mean(d, 0)
-    # std of mean distance to other docs
-    std_d = np.std(d, 0)
+    @staticmethod
+    def get_2d_projection(vectors):
+        return PCA(n_components=2).fit_transform(vectors)
 
-    # index of minimum avg distance document
-    id_min_d = np.argmin(avg_d)
+    def by_avg_distance(self, doc_ids, doc_rank=0, metric='cosine'):
 
-    # get represtention of prototypical doc
-    prototype_doc = representations[id_min_d]
-    uncertainity = std_d[id_min_d]
+        vectors = self.find_doc_vectors(doc_ids)
+        
+        # calc pariwise distances
+        d = pairwise_distances(vectors, metric=metric)
+        # mean distance to other docs
+        avg_d = np.mean(d, 0)
+        # std of mean distance to other docs
+        std_d = np.std(d, 0)
 
-    return prototype_doc, uncertainity
+        # index of document at desired rank
+        avg_d_argsort = np.argsort(avg_d)
+        doc_idx = int(np.argwhere(avg_d_argsort==doc_rank))
 
-# %%
-# add some network shit, 
-# so that we can track
-# - timeseries going between central nodes
-# - timeseries going between secondary to n-ary nodes
-# - timeseries going between the most deviating nodes
+        # get id of prototypical doc
+        prototype_doc_id = doc_ids[doc_idx]
+        uncertainity = std_d[doc_idx]
 
-# %%
-import re
-import datetime
-from tqdm import tqdm
-import ndjson
-import pandas as pd
+        return prototype_doc_id, uncertainity
 
-# representations
-ev = np.load(
-    '../../../models/representation_final_50_reduced.npy',
-    allow_pickle=True
-    )
+    def by_distance_to_centroid(self, doc_ids, doc_rank=0):
 
-# primitives
-path_primitives_daily = '../../../corpus/primitives_220331/primitives_corrected_daily.ndjson'
-with open(path_primitives_daily) as fin:
-    primitives_daily = ndjson.load(fin)
+        vectors = self.find_doc_vectors(doc_ids)
+        vecs_2d = self.get_2d_projection(vectors)
 
+        km = KMeans(n_clusters=1)
+        km.fit(vecs_2d)
 
-# %%
-# ensure correct formating
-bad_date_docs = []
-primitives_daily_date_format = []
-for doc in primitives_daily:
-    try:
-        datetime.datetime.strptime(doc['clean_date'], '%Y-%m-%d')
-        primitives_daily_date_format.append(doc)
-    except ValueError:
-        bad_date_docs.append(doc)
+        centroid = km.cluster_centers_
+        d_centroid = pairwise_distances(
+            X=centroid,
+            Y=vecs_2d
+        )
 
-# %%
-# sort primitives by date
-sorted_prim = sorted(
-    primitives_daily_date_format,
-    key=lambda t: datetime.datetime.strptime(t['clean_date'], '%Y-%m-%d')
-    )
+        # index of document at desired rank 
+        d_centroid_argsort = np.argsort(d_centroid)[0]
+        doc_idx = int(np.argwhere(d_centroid_argsort==doc_rank))
 
+        # get id of prototypical doc
+        prototype_doc_id = doc_ids[doc_idx]
+        uncertainity = km.inertia_
 
-# %%
-# append representation to primitives
-rep_doc_id = [event[0] for event in ev]
-rep_vals =[event[1].tolist() for event in ev]
+        return prototype_doc_id, uncertainity
 
-docs_not_represented = []
-for doc in tqdm(sorted_prim):
-    try:
-        idx = rep_doc_id.index(doc['id'])
-        corresponding_rep = rep_vals[idx]
-        doc['representation'] = corresponding_rep
-    except ValueError:
-        sorted_prim.remove(doc)
-        docs_not_represented.append(doc)
-
-
-
-# %%
-with open('../../../corpus/primitives_220331/events_repre_reduced.ndjson', 'w') as fout:
-    ndjson.dump(sorted_prim, fout)
-
-
-
-# %%
+    def by_relative_entropy(self, doc_ids, doc_rank=0):
+        pass
