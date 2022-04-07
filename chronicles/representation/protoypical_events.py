@@ -107,6 +107,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
 from document_vectors import RepresentationHandler
+from ..entropies.metrics import jsd, kld
 
 
 # %%
@@ -164,4 +165,13 @@ class PrototypeHandler(RepresentationHandler):
         return prototype_doc_id, uncertainity
 
     def by_relative_entropy(self, doc_ids, doc_rank=0):
+
+        vectors = self.find_doc_vectors(doc_ids)
+        # normalize vectors to be probability distributions
+        vectors_prob = np.divide(vectors, vectors.sum())
+
+        # option 1: pairwise relative entropy
+        d = pairwise_distances(vectors_prob, metric=jsd)
+        # option 2: jsd(doc | avg jsd of the rest)
+
         pass
