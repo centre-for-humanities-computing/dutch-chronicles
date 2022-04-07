@@ -39,7 +39,12 @@ python parser/give_ids.py \
     -ap "../data/primitives_${run_when}/primitives_annotated.ndjson" \
     -cp "../data/primitives_${run_when}/primitives_corrected.ndjson"
 
-echo "Cleaning date tags on corrected corput"
+echo "Cleaning date tags on corrected corpus"
 python misc/date_tag_resolutions.py \
     -i "../data/primitives_${run_when}/primitives_corrected.ndjson" \
     -o "../data/primitives_${run_when}/primitives_corrected_daily.ndjson"
+
+echo "Cleaning date tags on annotated corpus"
+python misc/date_tag_resolutions.py \
+    -i "../data/primitives_${run_when}/primitives_annotated.ndjson" \
+    -o "../data/primitives_${run_when}/primitives_annotated_daily.ndjson"
