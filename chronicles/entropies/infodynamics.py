@@ -4,26 +4,32 @@ Class for estimation of information dynamics of time-dependent probabilistic doc
     commit 1fb16bc91b99716f52b16100cede99177ac75f55
 """
 import numpy as np
-from entropies.metrics import kld, jsd
+from metrics import kld, jsd
 
 class InfoDynamics:
-    def __init__(self, data, time, window=3, weight=0, sort=False):
+    def __init__(self, data, time, window=3, weight=0, sort=False, normalize=False):
         """
         - data: list/array (of lists), bow representation of documents
         - time: list/array, time coordinate for each document (identical order as data)
         - window: int, window to compute novelty, transience, and resonance over
         - weight: int, parameter to set initial window for novelty and final window for transience
         - sort: bool, if time should be sorted in ascending order and data accordingly
+        - normalize: bool, make row sum to 1
         """
         self.window = window
         self.weight = weight
+
         if sort:
             self.data = np.array([text for _,text in sorted(zip(time, data))])
             self.time = sorted(time)
         else:
             self.data = np.array(data)
             self.time = time
+
         self.m = self.data.shape[0]
+    
+        if normalize:
+            data = data / data.sum(axis=1, keepdims=True)
         
     def novelty(self, meas=kld):
         N_hat = np.zeros(self.m)
