@@ -97,10 +97,10 @@ class RepresentationHandler:
 
         # get document representations
         if n_topics == self.n_topics:
-            tp_ids, tp_vals, tp_words, word_scores = model.get_documents_topics(
+            tp_ids, tp_vals, tp_words, word_scores = self.model.get_documents_topics(
                 doc_ids=doc_ids, reduced=False, num_topics=n_topics)
         else:
-            tp_ids, tp_vals, tp_words, word_scores = model.get_documents_topics(
+            tp_ids, tp_vals, tp_words, word_scores = self.model.get_documents_topics(
                 doc_ids=doc_ids, reduced=True, num_topics=n_topics)
 
         # sort by topic number
