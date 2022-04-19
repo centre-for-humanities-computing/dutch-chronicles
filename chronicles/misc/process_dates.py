@@ -52,7 +52,7 @@ def split_date(
     return years, months, days
 
 
-def process_dates(data: Union[List[str], pd.DataFrame], inplace=False, df=None):
+def parse_dates(data: Union[List[str], pd.DataFrame], inplace=False, df=None):
     '''Parse YYYY-MM-DD dates.
     Returns lists of year, month, week & day
 
