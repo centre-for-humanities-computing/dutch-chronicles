@@ -107,7 +107,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
 from entropies.metrics import jsd, kld
-from document_vectors import RepresentationHandler
+from .document_vectors import RepresentationHandler
 
 
 # %%
