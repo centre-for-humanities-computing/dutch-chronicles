@@ -112,8 +112,16 @@ from ..entropies.metrics import jsd, kld
 
 # %%
 class PrototypeHandler(RepresentationHandler):
-    def __init__(self) -> None:
-        pass
+    def __init__(self, model, primitives) -> None:
+        self.doc_id2vectoridx = model.doc_id2index
+        self.doc_id2primidx = {doc['id']: i for i,
+                               doc in enumerate(primitives)}
+
+        self.primitives = primitives
+        self.model = model
+        self.modeldv = model.model.dv
+
+        self.n_topics = model.get_num_topics()
 
     @staticmethod
     def get_2d_projection(vectors):
