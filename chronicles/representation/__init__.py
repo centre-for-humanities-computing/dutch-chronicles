@@ -1,2 +1,2 @@
-from document_vectors import RepresentationHandler
-from protoypical_events import PrototypeHandler
+from .document_vectors import RepresentationHandler
+from .protoypical_events import PrototypeHandler
