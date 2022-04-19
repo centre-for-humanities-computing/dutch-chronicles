@@ -50,3 +50,32 @@ def split_date(
         days.append(splitted_date[2])
 
     return years, months, days
+
+
+def process_dates(data: Union[List[str], pd.DataFrame], inplace=False, df=None):
+    '''Parse YYYY-MM-DD dates.
+    Returns lists of year, month, week & day
+
+    Parameters
+    ----------
+    data : List[dict]
+        primitives
+    inplace : bool
+        append date column to an existing dataframe?
+    df : pd.DataFrame
+        if inplace, dates will be appended to this df
+    
+    '''
+    weeks = add_week(data)
+    years, months, days = split_date(data)
+
+    if inplace:
+        df['year'] = years
+        df['month'] = months
+        df['week'] = weeks
+        df['day'] = days
+
+        return df
+
+    else:
+        return years, months, weeks, days
