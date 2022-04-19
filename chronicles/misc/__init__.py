@@ -1,1 +1,1 @@
-from process_dates import parse_dates
+from .process_dates import parse_dates
