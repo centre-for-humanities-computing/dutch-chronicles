@@ -45,9 +45,9 @@ def split_date(
 
     for date in data:
         splitted_date = date.split("-")
-        years.append(splitted_date[0])
-        months.append(splitted_date[1])
-        days.append(splitted_date[2])
+        years.append(int(splitted_date[0]))
+        months.append(int(splitted_date[1]))
+        days.append(int(splitted_date[2]))
 
     return years, months, days
 
