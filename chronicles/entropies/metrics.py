@@ -26,3 +26,17 @@ def jsd(p, q, base=np.e):
     p, q = p/p.sum(), q/q.sum()
     m = 1./2*(p + q)
     return stats.entropy(p, m, base=base)/2. + stats.entropy(q, m, base=base)/2.
+
+
+def cosine_distance(p, q):
+    '''Cosine distance for two vectors
+    '''
+    
+    p, q = np.asarray(p), np.asarray(q)
+
+    dot_prod = np.dot(p, q)
+    magnitude = np.sqrt(p.dot(p)) * np.sqrt(q.dot(q))
+    cos_sim = dot_prod / magnitude
+    cos_dist = 1 - cos_sim
+
+    return cos_dist
