@@ -1,5 +1,5 @@
-# %%
-from tkinter import E
+''' 
+'''
 import numpy as np
 import ndjson
 from wasabi import msg
@@ -12,7 +12,6 @@ from top2vec import Top2Vec
 from entropies.metrics import jsd, kld
 
 
-# %%
 class RepresentationHandler:
     def __init__(self, model, primitives, tolerate_invalid_ids=False):
 
@@ -35,7 +34,7 @@ class RepresentationHandler:
                 'Invalid doc_ids will be ignored. ' +
                 'Please see RepresentationHandler.missing_docid_history to see' +
                 'which ones were ignored'
-                )
+            )
         else:
             pass
 
@@ -45,7 +44,7 @@ class RepresentationHandler:
             return self.modeldv[
                 self.doc_id2vectoridx[doc_id]
             ]
-        
+
         except KeyError as error_doc_id_not_found:
             if self.coerce_key_errors:
                 # keep track of invalid doc_ids
@@ -54,7 +53,6 @@ class RepresentationHandler:
                 pass
             else:
                 raise KeyError(f'document {doc_id} not found in model.')
-
 
     def find_doc_vectors(self, doc_ids):
 
@@ -77,7 +75,7 @@ class RepresentationHandler:
             return self.primitives[
                 self.doc_id2primidx[doc_id]
             ]
-        
+
         except KeyError as error_doc_id_not_found:
             if self.coerce_key_errors:
                 # keep track of invalid doc_ids
@@ -91,7 +89,7 @@ class RepresentationHandler:
 
         if not isinstance(doc_ids, list):
             doc_ids = [doc_ids]
-        
+
         documents = [self.find_document(doc_id) for doc_id in doc_ids]
 
         # warn, if invalid doc_ids are tolerated
@@ -123,14 +121,14 @@ class RepresentationHandler:
             except KeyError:
                 self.missing_docid_history.append(doc_id)
                 pass
-        
+
         return validated_doc_ids
 
     def find_doc_cossim(self, doc_ids, n_topics):
 
         if not isinstance(doc_ids, list):
             doc_ids = [doc_ids]
-        
+
         # filter invalid doc_ids if approach is greedy
         if not self.coerce_key_errors:
             doc_ids = self.filter_invalid_doc_ids(doc_ids)
@@ -187,7 +185,7 @@ class RepresentationHandler:
 
             record.update({'doc_cossim': cossim})
             event_selection.append(record)
-        
+
         return event_selection
 
     @staticmethod
@@ -197,7 +195,7 @@ class RepresentationHandler:
     def by_avg_distance(self, doc_ids, doc_rank=0, metric='cosine'):
 
         vectors = self.find_doc_vectors(doc_ids)
-        
+
         # calc pariwise distances
         d = pairwise_distances(vectors, metric=metric)
         # mean distance to other docs
@@ -207,7 +205,7 @@ class RepresentationHandler:
 
         # index of document at desired rank
         avg_d_argsort = np.argsort(avg_d)
-        doc_idx = int(np.argwhere(avg_d_argsort==doc_rank))
+        doc_idx = int(np.argwhere(avg_d_argsort == doc_rank))
 
         # get id of prototypical doc
         prototype_doc_id = doc_ids[doc_idx]
@@ -229,9 +227,9 @@ class RepresentationHandler:
             Y=vecs_2d
         )
 
-        # index of document at desired rank 
+        # index of document at desired rank
         d_centroid_argsort = np.argsort(d_centroid)[0]
-        doc_idx = int(np.argwhere(d_centroid_argsort==doc_rank))
+        doc_idx = int(np.argwhere(d_centroid_argsort == doc_rank))
 
         # get id of prototypical doc
         prototype_doc_id = doc_ids[doc_idx]
