@@ -135,6 +135,10 @@ class RepresentationHandler:
         if not self.coerce_key_errors:
             doc_ids = self.filter_invalid_doc_ids(doc_ids)
 
+        # by default, get n_topics same as the model
+        if not n_topics:
+            n_topics = self.n_topics
+
         # get document representations
         if n_topics == self.n_topics:
             tp_ids, tp_vals, tp_words, word_scores = self.model.get_documents_topics(
@@ -170,12 +174,15 @@ class RepresentationHandler:
 
         return event_selection
 
-    def get_primitives_and_cossims(self, doc_ids):
+    def get_primitives_and_cossims(self, doc_ids, n_topics):
+
+        if not n_topics:
+            n_topics = self.n_topics
 
         event_selection = []
         for doc_id in doc_ids:
             record = self.find_document(doc_id)
-            cossim = self.find_doc_cossim(doc_id)
+            cossim = self.find_doc_cossim(doc_id, n_topics)
             cossim = cossim.tolist()
 
             record.update({'doc_cossim': cossim})
