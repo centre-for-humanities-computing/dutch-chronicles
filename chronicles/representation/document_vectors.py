@@ -124,7 +124,7 @@ class RepresentationHandler:
 
         return validated_doc_ids
 
-    def find_doc_cossim(self, doc_ids, n_topics):
+    def find_doc_cossim(self, doc_ids, n_topics=None):
 
         if not isinstance(doc_ids, list):
             doc_ids = [doc_ids]
@@ -172,7 +172,7 @@ class RepresentationHandler:
 
         return event_selection
 
-    def get_primitives_and_cossims(self, doc_ids, n_topics):
+    def get_primitives_and_cossims(self, doc_ids, n_topics=None):
 
         if not n_topics:
             n_topics = self.n_topics
