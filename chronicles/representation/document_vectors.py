@@ -155,7 +155,7 @@ class RepresentationHandler:
         representations = np.vstack(representations)
 
         # warn, if doc_id search is not greedy
-        self._warning_not_greedy()
+        self._warning_coerce_key_errors()
 
         return representations
 
