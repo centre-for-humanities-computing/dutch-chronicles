@@ -67,7 +67,7 @@ for week in tqdm(groupings):
         prototypes_std.append(prot_std)
 
 prot_vectors = rh_weekly.find_doc_vectors(prototypes_ids)
-prot_cossim = rh_weekly.find_doc_cossim(prototypes_ids)
+prot_cossim = rh_weekly.find_doc_cossim(prototypes_ids, n_topics = 100)
 prot_docs = rh_weekly.find_documents(prototypes_ids)
 
 # %%
