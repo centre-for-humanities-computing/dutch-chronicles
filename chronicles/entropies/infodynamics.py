@@ -4,7 +4,7 @@ Class for estimation of information dynamics of time-dependent probabilistic doc
     commit 1fb16bc91b99716f52b16100cede99177ac75f55
 """
 import numpy as np
-from metrics import kld, jsd
+from .metrics import kld, jsd
 
 class InfoDynamics:
     def __init__(self, data, time, window=3, weight=0, sort=False, normalize=False):

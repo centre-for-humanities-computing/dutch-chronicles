@@ -192,9 +192,12 @@ class RepresentationHandler:
     def get_2d_projection(vectors):
         return PCA(n_components=2).fit_transform(vectors)
 
-    def by_avg_distance(self, doc_ids, doc_rank=0, metric='cosine'):
+    def by_avg_distance(self, doc_ids, doc_rank=0, metric='cosine', reduce_dim=False):
 
         vectors = self.find_doc_vectors(doc_ids)
+
+        if reduce_dim:
+            vectors = self.get_2d_projection(vectors)
 
         # calc pariwise distances
         d = pairwise_distances(vectors, metric=metric)
