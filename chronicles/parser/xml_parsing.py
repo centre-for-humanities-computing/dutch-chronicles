@@ -73,6 +73,8 @@ def document_to_string(doc_list):
     pat_line_break = re.compile(r'¬\s+', re.UNICODE)
     # trailing hypthen pattern (does not delimit words)
     pat_trailing_line_break = re.compile(r'¬', re.UNICODE)
+    # specials characts used by annotators, but we're ignoring them
+    pat_unreadable = re.compile(r'#|@', re.UNICODE)
 
     if not isinstance(doc_list, list):
         doc_list = [doc_list]
@@ -92,6 +94,10 @@ def document_to_string(doc_list):
             # remove hyphens that do not delimit words
             # (= hyphen at the end of document)
             doc['text'] = re.sub(pat_trailing_line_break, '', doc['text'])
+        
+        # third pass: get rid of special characters used by annotators
+        while re.search(pat_unreadable, doc['text']):
+            doc['text'] = re.sub(pat_unreadable, '', doc['text'])
 
         updated_doc_list.append(doc)
 
