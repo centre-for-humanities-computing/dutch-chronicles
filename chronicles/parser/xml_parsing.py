@@ -71,6 +71,8 @@ def document_to_string(doc_list):
     '''
     # hyphen pattern
     pat_line_break = re.compile(r'¬\s+', re.UNICODE)
+    # trailing hypthen pattern (does not delimit words)
+    pat_trailing_line_break = re.compile(r'¬', re.UNICODE)
 
     if not isinstance(doc_list, list):
         doc_list = [doc_list]
@@ -80,10 +82,16 @@ def document_to_string(doc_list):
         # turn into a single string
         doc['text'] = ' '.join(doc['text'])
 
-        # merge multiline words
+        # first pass: merge multiline words
         while re.search(pat_line_break, doc['text']):
             # remove space after linebreak
             doc['text'] = re.sub(pat_line_break, '', doc['text'])
+        
+        # second pass: get rid of trailing hyphens (no space after them)
+        while re.search(pat_trailing_line_break, doc['text']):
+            # remove hyphens that do not delimit words
+            # (= hyphen at the end of document)
+            doc['text'] = re.sub(pat_trailing_line_break, '', doc['text'])
 
         updated_doc_list.append(doc)
 
