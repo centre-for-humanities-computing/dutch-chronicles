@@ -3,6 +3,7 @@ Class for estimation of information dynamics of time-dependent probabilistic doc
     taken from https://github.com/centre-for-humanities-computing/newsFluxus/blob/master/src/tekisuto/models/infodynamics.py
     commit 1fb16bc91b99716f52b16100cede99177ac75f55
 """
+import json
 import numpy as np
 from .metrics import kld, jsd
 
@@ -77,3 +78,33 @@ class InfoDynamics:
         self.rsigma = (self.nsigma + self.tsigma) / 2
         self.rsigma[:self.window] = np.zeros([self.window]) + self.weight
         self.rsigma[-self.window:] = np.zeros([self.window]) + self.weight
+
+    def slice_zeros(self):
+        self.nsignal = self.nsignal[self.window:-self.window]
+        self.nsigma = self.nsigma[self.window:-self.window]
+        self.tsignal = self.tsignal[self.window:-self.window]
+        self.tsigma = self.tsigma[self.window:-self.window]
+        self.rsignal = self.rsignal[self.window:-self.window]
+        self.rsigma = self.rsigma[self.window:-self.window]
+
+    def fit(self, meas, slice_w=False):
+        self.novelty(meas)
+        self.transience(meas)
+        self.resonance(meas)
+        if slice_w:
+            self.slice_zeros()
+
+    def fit_save(self, meas, path, slice_w=False):
+        self.fit(meas, slice_w)
+
+        out = {
+            'novelty': self.nsignal.tolist(),
+            'novelty_sigma': self.nsigma.tolist(),
+            'transience': self.tsignal.tolist(),
+            'transience_sigma': self.tsigma.tolist(),
+            'resonance': self.rsignal.tolist(),
+            'resonance_sigma': self.rsigma.tolist(),
+        }
+
+        with open(path, 'w') as f:
+            json.dump(out, f)
