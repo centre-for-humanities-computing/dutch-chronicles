@@ -14,6 +14,9 @@ from top2vec import Top2Vec
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
 
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 from representation import RepresentationHandler
 from misc import parse_dates
 from entropies import InfoDynamics
@@ -37,7 +40,7 @@ prims = prims.sort_values(by=['year', 'week'])
 
 prims['text_len'] = prims['text'].apply(len)
 prims = prims.query('text_len > 50')
-
+prims.to_csv('../models/prims.csv', index=False)
 
 # %%
 # daily doc_id groupings
@@ -81,6 +84,12 @@ msg.info('extracting vectors')
 prot_vectors = rh_daily.find_doc_vectors(prototypes_ids)
 prot_cossim = rh_daily.find_doc_cossim(prototypes_ids, n_topics = 100)
 prot_docs = rh_daily.find_documents(prototypes_ids)
+
+# add std & dump prots
+[doc.update({'uncertainity': float(std)}) for doc, std in zip(prot_docs, prototypes_std)]
+with open('../models/prototype_docs.ndjson', 'w') as fout:
+    ndjson.dump(prot_docs, fout)
+
 msg.good('done (prototypes, vectors)')
 
 
@@ -96,11 +105,15 @@ prot_vectors_norm = np.array([softmax(vec) for vec in prot_vectors])
 
 # %%
 # relative entropy experiments
+LG_WINDOWS = True
 
-window_param_grid = list(range(2, 51))
+if LG_WINDOWS:
+    window_param_grid = [100, 200, 300, 400, 500, 1000]
+else:
+    window_param_grid = list(range(2, 51))
 
 system_states = []
-for w in tqdm(window_param_grid[-1::]):
+for w in tqdm(window_param_grid):
 
     msg.info(f'infodynamics w {w}')
     # initialize infodyn class
@@ -139,147 +152,68 @@ for w in tqdm(window_param_grid[-1::]):
     system_states.append(regression_res)
     print(f'beta: {lm.coef_[0][0]}')
 
+if LG_WINDOWS:
+    outpath = '../models/novelty_lg_sys_state.ndjson'
+else:
+    outpath = '../models/novelty_sys_state.ndjson'
+
+with open(outpath, 'w') as fout:
+    ndjson.dump(system_states, fout)
+
 msg.good('done (infodynamics)')
 
-# %%
-# what is a good sys state
-df_sys = pd.DataFrame(system_states)
+# # %%
+# # what is a good sys state
+# df_sys = pd.DataFrame(system_states)
 
-# %%
-# adaptive filtering on desired window
-# load signal for desired w
-w = 20
-with open(f'../models/novelty/daily_w{w}.json') as fin:
-    signal = json.load(fin)
+# # %%
+# # adaptive filtering on desired window
+# # load signal for desired w
+# w = 20
+# with open(f'../models/novelty/daily_w{w}.json') as fin:
+#     signal = json.load(fin)
 
-# covert to df and add dates
-df_signal = pd.DataFrame(signal)
-# get a corresponding primitives df
-sliced_proto_ids = prototypes_ids[w:-w]
-df_proto = prims.query('id == @sliced_proto_ids')
-# merge
-for col_name in df_proto.columns.tolist():
-    df_signal[col_name] = df_proto[col_name].tolist()
+# # covert to df and add dates
+# df_signal = pd.DataFrame(signal)
+# # get a corresponding primitives df
+# sliced_proto_ids = prototypes_ids[w:-w]
+# df_proto = prims.query('id == @sliced_proto_ids')
+# # merge
+# for col_name in df_proto.columns.tolist():
+#     df_signal[col_name] = df_proto[col_name].tolist()
 
-# smoothing of signal
-for var_name in ['novelty', 'transience', 'resonance']:
-    df_signal[f'{var_name}_afa'] = adaptive_filter(df_signal[var_name], span=64)
+# # smoothing of signal
+# for var_name in ['novelty', 'transience', 'resonance']:
+#     df_signal[f'{var_name}_afa'] = adaptive_filter(df_signal[var_name], span=64)
 
-# date str to datetime
-for i, date in df_signal['clean_date'].iteritems():
-    try:
-        parsed_date = datetime.strptime(date, '%Y-%m-%d')
-        df_signal.loc[i, 'parsed_date'] = parsed_date
-    except ValueError:
-        pass
-
-
-# %%
-# plot smooth novelty
-df_viz = df_signal.dropna()
-
-fig = plt.figure(figsize=(10, 6))
-
-plt.plot(
-    df_viz['parsed_date'],
-    df_viz['novelty'],
-    c='grey',
-    alpha=0.3
-)
-
-plt.plot(
-    df_viz['parsed_date'],
-    df_viz['novelty_afa'],
-)
-
-plt.title(f'Novelty (w={w})')
-plt.savefig(f'../models/novelty_fig/novelty_smooth_w{w}.png')
-
-# %%
-# plot smooth resonance
-fig = plt.figure(figsize=(10, 6))
-
-plt.plot(
-    df_viz['parsed_date'],
-    df_viz['resonance'],
-    c='grey',
-    alpha=0.3
-)
-
-plt.plot(
-    df_viz['parsed_date'],
-    df_viz['resonance_afa'],
-)
-
-plt.title(f'Resonance (w={w})')
-plt.savefig(f'../models/novelty_fig/resonance_smooth_w{w}.png')
-
-# %%
-# plot
-import seaborn as sns
-import matplotlib.pyplot as plt
-from datetime import datetime
-from scipy.ndimage import gaussian_filter1d
-
-nov_fil = gaussian_filter1d(im_vectors.nsignal, sigma=6)
-tra_fil = gaussian_filter1d(im_vectors.tsignal, sigma=6)
-res_fil = gaussian_filter1d(im_vectors.rsignal, sigma=6)
-
-dates = []
-novelty_f = []
-transience_f = []
-resonance_f = []
-std_f = []
-for doc, nval, tval, rval, stdval in zip(prot_docs, nov_fil, tra_fil, res_fil, prototypes_std):
-    try:
-        date = datetime.strptime(doc['clean_date'], '%Y-%m-%d')
-        dates.append(date)
-        novelty_f.append(nval)
-        transience_f.append(tval)
-        resonance_f.append(rval)
-        std_f.append(stdval)
-    except:
-        pass
-
-# %%
-# novelty
-fig, ax = plt.subplots()
-sns.lineplot(
-    x=dates,
-    y=novelty_f,
-    ax=ax
-)
-
-ax.set_ylim(0.35, 1)
-
-# %%
-# transience
-fig, ax = plt.subplots()
-sns.lineplot(
-    x=dates,
-    y=transience_f,
-    ax=ax
-)
-
-ax.set_ylim(0.35, 1)
+# # date str to datetime
+# for i, date in df_signal['clean_date'].iteritems():
+#     try:
+#         parsed_date = datetime.strptime(date, '%Y-%m-%d')
+#         df_signal.loc[i, 'parsed_date'] = parsed_date
+#     except ValueError:
+#         pass
 
 
-# %%
-# resonance
-fig, ax = plt.subplots()
-sns.lineplot(
-    x=dates,
-    y=resonance_f,
-    ax=ax
-)
+# # %%
+# # plot smooth novelty
+# df_viz = df_signal.dropna()
 
+# fig = plt.figure(figsize=(10, 6))
 
-# %%
-# prototype representativeness uncertainity
+# plt.plot(
+#     df_viz['parsed_date'],
+#     df_viz['novelty'],
+#     c='grey',
+#     alpha=0.3
+# )
 
-sns.lineplot(
-    x=dates,
-    y=gaussian_filter1d(std_f, sigma=20)
-)
+# plt.plot(
+#     df_viz['parsed_date'],
+#     df_viz['novelty_afa'],
+# )
 
-# %%
+# plt.title(f'Novelty (w={w})')
+# plt.savefig(f'../models/novelty_fig/novelty_smooth_w{w}.png')
+
+# # %%
