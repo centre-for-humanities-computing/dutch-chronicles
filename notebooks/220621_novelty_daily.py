@@ -105,12 +105,12 @@ prot_vectors_norm = np.array([softmax(vec) for vec in prot_vectors])
 
 # %%
 # relative entropy experiments
-LG_WINDOWS = True
+LG_WINDOWS = False
 
 if LG_WINDOWS:
     window_param_grid = [100, 200, 300, 400, 500, 1000]
 else:
-    window_param_grid = list(range(2, 51))
+    window_param_grid = list(range(2, 31))
 
 system_states = []
 for w in tqdm(window_param_grid):
@@ -161,59 +161,3 @@ with open(outpath, 'w') as fout:
     ndjson.dump(system_states, fout)
 
 msg.good('done (infodynamics)')
-
-# # %%
-# # what is a good sys state
-# df_sys = pd.DataFrame(system_states)
-
-# # %%
-# # adaptive filtering on desired window
-# # load signal for desired w
-# w = 20
-# with open(f'../models/novelty/daily_w{w}.json') as fin:
-#     signal = json.load(fin)
-
-# # covert to df and add dates
-# df_signal = pd.DataFrame(signal)
-# # get a corresponding primitives df
-# sliced_proto_ids = prototypes_ids[w:-w]
-# df_proto = prims.query('id == @sliced_proto_ids')
-# # merge
-# for col_name in df_proto.columns.tolist():
-#     df_signal[col_name] = df_proto[col_name].tolist()
-
-# # smoothing of signal
-# for var_name in ['novelty', 'transience', 'resonance']:
-#     df_signal[f'{var_name}_afa'] = adaptive_filter(df_signal[var_name], span=64)
-
-# # date str to datetime
-# for i, date in df_signal['clean_date'].iteritems():
-#     try:
-#         parsed_date = datetime.strptime(date, '%Y-%m-%d')
-#         df_signal.loc[i, 'parsed_date'] = parsed_date
-#     except ValueError:
-#         pass
-
-
-# # %%
-# # plot smooth novelty
-# df_viz = df_signal.dropna()
-
-# fig = plt.figure(figsize=(10, 6))
-
-# plt.plot(
-#     df_viz['parsed_date'],
-#     df_viz['novelty'],
-#     c='grey',
-#     alpha=0.3
-# )
-
-# plt.plot(
-#     df_viz['parsed_date'],
-#     df_viz['novelty_afa'],
-# )
-
-# plt.title(f'Novelty (w={w})')
-# plt.savefig(f'../models/novelty_fig/novelty_smooth_w{w}.png')
-
-# # %%
