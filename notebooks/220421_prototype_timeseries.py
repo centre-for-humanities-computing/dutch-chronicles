@@ -14,9 +14,9 @@ from entropies.metrics import jsd, kld, cosine_distance
 
 # %%
 # load resources
-model = Top2Vec.load("/work/62138/models/top2vec/top2vecmodel_220504")
+model = Top2Vec.load("../models/top2vec/top2vecmodel_220504")
 
-with open('/work/62138/corpus/primitives_220503/primitives_corrected_daily.ndjson') as fin:
+with open('../data/primitives_220503/primitives_corrected_daily.ndjson') as fin:
     primitives = ndjson.load(fin)
 
 # %%
@@ -24,7 +24,7 @@ with open('/work/62138/corpus/primitives_220503/primitives_corrected_daily.ndjso
 prims = pd.DataFrame(primitives)
 prims = parse_dates(prims['clean_date'], inplace=True, df=prims)
 
-prims = prims.query('year >= 1450 & year <= 1820')
+prims = prims.query('year >= 1400 & year <= 1800')
 prims = prims.sort_values(by=['year', 'week'])
 
 prims['text_len'] = prims['text'].apply(len)
