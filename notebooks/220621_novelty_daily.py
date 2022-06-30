@@ -2,6 +2,7 @@
 import sys
 sys.path.append('../chronicles/')
 
+import os
 from datetime import datetime
 import json
 
@@ -23,11 +24,24 @@ from entropies import InfoDynamics
 from entropies.metrics import jsd, kld, cosine_distance
 from entropies.afa import adaptive_filter
 
+
+# %%
+# parameters
+TOP2VEC_PATH = "../models/top2vec/top2vecmodel_220504"
+PRIMITIVES_PATH = "../data/primitives_220503/primitives_corrected_daily.ndjson"
+
+LG_WINDOWS = False
+DOC_RANK = 1
+
+# init folders
+if not os.path.exists('/models/novelty_rank{DOC_RANK}'):
+    os.mkdir('/models/novelty_rank{DOC_RANK}')
+
 # %%
 # load resources
-model = Top2Vec.load("../models/top2vec/top2vecmodel_220504")
+model = Top2Vec.load(TOP2VEC_PATH)
 
-with open('../data/primitives_220503/primitives_corrected_daily.ndjson') as fin:
+with open(PRIMITIVES_PATH) as fin:
     primitives = ndjson.load(fin)
 
 # %%
@@ -74,7 +88,8 @@ for week in tqdm(groupings_day):
         else:
             prot_id, prot_std = rh_daily.by_avg_distance(
                 doc_ids,
-                metric='cosine'
+                metric='cosine',
+                doc_rank=DOC_RANK
             )
 
         prototypes_ids.append(prot_id)
@@ -87,7 +102,7 @@ prot_docs = rh_daily.find_documents(prototypes_ids)
 
 # add std & dump prots
 [doc.update({'uncertainity': float(std)}) for doc, std in zip(prot_docs, prototypes_std)]
-with open('../models/prototype_docs.ndjson', 'w') as fout:
+with open(f'../models/prototype_docs_rank{DOC_RANK}.ndjson', 'w') as fout:
     ndjson.dump(prot_docs, fout)
 
 msg.good('done (prototypes, vectors)')
@@ -105,7 +120,6 @@ prot_vectors_norm = np.array([softmax(vec) for vec in prot_vectors])
 
 # %%
 # relative entropy experiments
-LG_WINDOWS = False
 
 if LG_WINDOWS:
     window_param_grid = [100, 200, 300, 400, 500, 1000]
@@ -128,7 +142,7 @@ for w in tqdm(window_param_grid):
     im_vectors.fit_save(
         meas=jsd,
         slice_w=True,
-        path=f'../models/novelty/daily_w{w}.json'
+        path=f'../models/novelty_rank{DOC_RANK}/daily_w{w}.json'
         )
     
     # track system state at different windows
@@ -153,9 +167,9 @@ for w in tqdm(window_param_grid):
     print(f'beta: {lm.coef_[0][0]}')
 
 if LG_WINDOWS:
-    outpath = '../models/novelty_lg_sys_state.ndjson'
+    outpath = f'../models/novelty_lg_sys_state_rank{DOC_RANK}.ndjson'
 else:
-    outpath = '../models/novelty_sys_state.ndjson'
+    outpath = f'../models/novelty_sys_state_rank{DOC_RANK}.ndjson'
 
 with open(outpath, 'w') as fout:
     ndjson.dump(system_states, fout)
