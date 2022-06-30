@@ -39,7 +39,7 @@ prims = prims.query('year >= 1500 & year <= 1820')
 prims = prims.sort_values(by=['year', 'week'])
 
 prims['text_len'] = prims['text'].apply(len)
-prims = prims.query('text_len > 50')
+prims = prims.query('text_len >= 50 & text_len <= 5000')
 prims.to_csv('../models/prims.csv', index=False)
 
 # %%
