@@ -34,8 +34,8 @@ LG_WINDOWS = False
 DOC_RANK = 1
 
 # init folders
-if not os.path.exists('/models/novelty_rank{DOC_RANK}'):
-    os.mkdir('/models/novelty_rank{DOC_RANK}')
+if not os.path.exists(f'../models/novelty_rank{DOC_RANK}'):
+    os.mkdir(f'../models/novelty_rank{DOC_RANK}')
 
 # %%
 # load resources
@@ -84,6 +84,13 @@ for week in tqdm(groupings_day):
         if len(doc_ids) == 1:
             prot_id = doc_ids[0]
             prot_std = 0
+        
+        elif DOC_RANK >= len(doc_ids):
+            prot_id, prot_std = rh_daily.by_avg_distance(
+                doc_ids,
+                metric='cosine',
+                doc_rank=len(doc_ids)-1
+            )
 
         else:
             prot_id, prot_std = rh_daily.by_avg_distance(
@@ -124,7 +131,8 @@ prot_vectors_norm = np.array([softmax(vec) for vec in prot_vectors])
 if LG_WINDOWS:
     window_param_grid = [100, 200, 300, 400, 500, 1000]
 else:
-    window_param_grid = list(range(2, 31))
+    # window_param_grid = list(range(2, 31))
+    window_param_grid = [5, 10, 15, 20, 25, 30]
 
 system_states = []
 for w in tqdm(window_param_grid):
@@ -175,3 +183,6 @@ with open(outpath, 'w') as fout:
     ndjson.dump(system_states, fout)
 
 msg.good('done (infodynamics)')
+
+
+# %%
