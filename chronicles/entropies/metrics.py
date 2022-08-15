@@ -17,7 +17,7 @@ def kld(p, q):
     return np.sum(np.where(p != 0, (p-q) * np.log10(p / q), 0))
 
 
-def jsd(p, q, base=np.e):
+def jsd(p, q, base=2):
     '''Pairwise Jensen-Shannon Divergence for two probability distributions  
     '''
     # convert to np.array
