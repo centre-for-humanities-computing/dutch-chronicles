@@ -125,7 +125,7 @@ def main(param):
     prims.describe()
 
     msg.info('filtered subset description')
-    print(prims_unfiltered.describe())
+    print(prims.describe())
 
     # switch: pick prototypes if desired
     if param['prototypes']['find_prototypes']:
@@ -209,10 +209,11 @@ def main(param):
         )
 
         subset_ids = prims['id'].tolist()
+        valid_subset_ids = rh_noproto.filter_invalid_doc_ids(subset_ids)
 
-        prot_vectors = rh_noproto.find_doc_vectors(subset_ids)
-        prot_cossim = rh_noproto.find_doc_cossim(subset_ids, n_topics=100)
-        prot_docs = rh_noproto.find_documents(subset_ids)
+        prot_vectors = rh_noproto.find_doc_vectors(valid_subset_ids)
+        prot_cossim = rh_noproto.find_doc_cossim(valid_subset_ids, n_topics=100)
+        prot_docs = rh_noproto.find_documents(valid_subset_ids)
 
         # dump with only resolution in filename
         with open(
@@ -224,9 +225,11 @@ def main(param):
 
     msg.good('done (prototypes, vectors)')
 
+
     # softmax on vectors
     if param['representation']['softmax']:
         prot_vectors = np.array([softmax(vec) for vec in prot_vectors])
+
 
     # relative entropy experiments
     system_states = []
@@ -285,5 +288,9 @@ if __name__ == '__main__':
     # with open(args['settings']) as fin:
     with open(args['yml']) as fin:
         param = yaml.safe_load(fin)
+
+    # init output folder
+    if not os.path.exists(param['paths']['outdir']):
+        os.mkdir(param['paths']['outdir'])
 
     main(param)
