@@ -1,10 +1,16 @@
+''' 
+Combine top2vec model, dataset of primitives.
+Calculate novelty at different windows.
+Export a dataframe for analysis.
+'''
+
 # %%
 import sys
 sys.path.append('../chronicles/')
 
 import os
 from datetime import datetime
-import json
+import yaml
 
 import ndjson
 import numpy as np
@@ -31,11 +37,17 @@ TOP2VEC_PATH = "../models/top2vec/top2vecmodel_220504"
 PRIMITIVES_PATH = "../data/primitives_220503/primitives_corrected_daily.ndjson"
 
 LG_WINDOWS = False
-DOC_RANK = 1
+DOC_RANK = 0
+PROTOTYPES = True
 
-# init folders
-if not os.path.exists(f'../models/novelty_rank{DOC_RANK}'):
-    os.mkdir(f'../models/novelty_rank{DOC_RANK}')
+if PROTOTYPES:
+    outdir = f'../models/2208_novelties/novelty_docrank{DOC_RANK}'
+else:
+    outdir = f'../models/2208_novelties/novelty_noprototype'
+
+# init output folders
+if not os.path.exists(outdir):
+    os.mkdir(outdir)
 
 # %%
 # load resources
@@ -45,74 +57,105 @@ with open(PRIMITIVES_PATH) as fin:
     primitives = ndjson.load(fin)
 
 # %%
-# get subset for the analysis
-prims = pd.DataFrame(primitives)
-prims = parse_dates(prims['clean_date'], inplace=True, df=prims)
+# parse dates & get metadata of the subset
+prims_unfiltered = pd.DataFrame(primitives)
+prims_unfiltered = parse_dates(prims_unfiltered['clean_date'], inplace=True, df=prims_unfiltered)
 
+# text length
+prims_unfiltered['n_char'] = prims_unfiltered['text'].str.len()
+prims_unfiltered.describe()
+
+
+# %%
+# filtering
+prims = prims_unfiltered.copy()
+# cut extreme years
 prims = prims.query('year >= 1500 & year <= 1820')
 prims = prims.sort_values(by=['year', 'week'])
+# cut very short & very long docs
+prims = prims.query('n_char >= 50 & n_char <= 5000')
+prims.describe()
 
-prims['text_len'] = prims['text'].apply(len)
-prims = prims.query('text_len >= 50 & text_len <= 5000')
-prims.to_csv('../models/prims.csv', index=False)
+''' 
+Despite dropping 6100 documents, 
+the mean and median number of characters remains almost unchanged after this filtering.
+Also the mean and median of document dating remains almost unchanged.
+'''
 
 # %%
 # daily doc_id groupings
-df_groupings_day = (prims
-    .groupby(['year', 'week', 'day'])["id"].apply(list)
-    .reset_index()
-    .sort_values(by=['year', 'week', 'day'])
-)
 
-groupings_day = df_groupings_day['id'].tolist()
 
 # %%
-# get ids of prototypes
-rh_daily = RepresentationHandler(
-    model, primitives, tolerate_invalid_ids=False
+
+if PROTOTYPES:
+
+    df_groupings_day = (prims
+        .groupby(['year', 'week', 'day'])["id"].apply(list)
+        .reset_index()
+        .sort_values(by=['year', 'week', 'day'])
     )
 
-prototypes_ids = []
-prototypes_std = []
+    groupings_day = df_groupings_day['id'].tolist()
 
-msg.info('finding prototypes')
-for week in tqdm(groupings_day):
-    doc_ids = rh_daily.filter_invalid_doc_ids(week)
+    rh_daily = RepresentationHandler(
+        model, primitives, tolerate_invalid_ids=False
+        )
 
-    if doc_ids:
+    prototypes_ids = []
+    prototypes_std = []
 
-        if len(doc_ids) == 1:
-            prot_id = doc_ids[0]
-            prot_std = 0
-        
-        elif DOC_RANK >= len(doc_ids):
-            prot_id, prot_std = rh_daily.by_avg_distance(
-                doc_ids,
-                metric='cosine',
-                doc_rank=len(doc_ids)-1
-            )
+    msg.info('finding prototypes')
+    for week in tqdm(groupings_day):
+        doc_ids = rh_daily.filter_invalid_doc_ids(week)
 
-        else:
-            prot_id, prot_std = rh_daily.by_avg_distance(
-                doc_ids,
-                metric='cosine',
-                doc_rank=DOC_RANK
-            )
+        if doc_ids:
 
-        prototypes_ids.append(prot_id)
-        prototypes_std.append(prot_std)
+            if len(doc_ids) == 1:
+                prot_id = doc_ids[0]
+                prot_std = 0
+            
+            elif DOC_RANK >= len(doc_ids):
+                prot_id, prot_std = rh_daily.by_avg_distance(
+                    doc_ids,
+                    metric='cosine',
+                    doc_rank=len(doc_ids)-1
+                )
 
-msg.info('extracting vectors')
-prot_vectors = rh_daily.find_doc_vectors(prototypes_ids)
-prot_cossim = rh_daily.find_doc_cossim(prototypes_ids, n_topics = 100)
-prot_docs = rh_daily.find_documents(prototypes_ids)
+            else:
+                prot_id, prot_std = rh_daily.by_avg_distance(
+                    doc_ids,
+                    metric='cosine',
+                    doc_rank=DOC_RANK
+                )
 
-# add std & dump prots
-[doc.update({'uncertainity': float(std)}) for doc, std in zip(prot_docs, prototypes_std)]
-with open(f'../models/prototype_docs_rank{DOC_RANK}.ndjson', 'w') as fout:
-    ndjson.dump(prot_docs, fout)
+            prototypes_ids.append(prot_id)
+            prototypes_std.append(prot_std)
 
-msg.good('done (prototypes, vectors)')
+    msg.info('extracting vectors')
+    prot_vectors = rh_daily.find_doc_vectors(prototypes_ids)
+    prot_cossim = rh_daily.find_doc_cossim(prototypes_ids, n_topics = 100)
+    prot_docs = rh_daily.find_documents(prototypes_ids)
+
+    # add std & dump prots
+    [doc.update({'uncertainity': float(std)}) for doc, std in zip(prot_docs, prototypes_std)]
+    with open(f'../models/prototype_docs_rank{DOC_RANK}.ndjson', 'w') as fout:
+        ndjson.dump(prot_docs, fout)
+
+    msg.good('done (prototypes, vectors)')
+
+else:
+
+    rh_noproto = RepresentationHandler(
+        model, primitives, tolerate_invalid_ids=False
+        )
+
+    subset_ids = prims['id'].tolist()
+    
+    prot_vectors = rh_noproto.find_doc_vectors(subset_ids)
+    prot_cossim = rh_noproto.find_doc_cossim(subset_ids, n_topics = 100)
+    prot_docs = rh_noproto.find_documents(subset_ids)
+
 
 
 # %%
@@ -127,12 +170,10 @@ prot_vectors_norm = np.array([softmax(vec) for vec in prot_vectors])
 
 # %%
 # relative entropy experiments
-
 if LG_WINDOWS:
     window_param_grid = [100, 200, 300, 400, 500, 1000]
 else:
-    # window_param_grid = list(range(2, 31))
-    window_param_grid = [5, 10, 15, 20, 25, 30]
+    window_param_grid = [1, 5, 10, 20, 30, 40, 50]
 
 system_states = []
 for w in tqdm(window_param_grid):
