@@ -268,7 +268,7 @@ def main(param):
         # track fitted parameters
         regression_res = {
             'window': w,
-            'alpha': lm.intercept_[0],
+            'alpha': lm.intercept_,
             'beta': lm.coef_[0][0],
             'r_sq': lm.score(X=zn, y=zr)
         }
