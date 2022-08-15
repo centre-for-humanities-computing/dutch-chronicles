@@ -11,6 +11,8 @@ filter:
 
 representation:
   softmax: True
+  export_vec: True
+  export_docsim: True
 
 prototypes:
   find_prototypes: False
