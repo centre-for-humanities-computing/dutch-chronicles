@@ -1,6 +1,9 @@
 # data
 data/
 lda/*.npy
+models/
+fig/
+for_kate/
 
 # macos
 .DS_Store
