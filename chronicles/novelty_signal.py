@@ -34,13 +34,14 @@ filter:
 
 
 representataion:
-(how to represent the documents)
+(what representations to export)
 
-    type : str [DEFUNCT]
-        either "vectors" for doc2vec representations
-        or "docsims" for cosine similarities to topic centroids
     softmax : bool
         apply softmax to document representations?
+    export_vec : bool
+        export doc2vec representations?
+    export_docsim : bool
+        export cosince similarities to 100 topic centroids?
 
 
 prototypes:
@@ -193,13 +194,7 @@ def main(param):
         # add uncertainity to doc dump
         [doc.update({'uncertainity': float(std)})
          for doc, std in zip(prot_docs, prototypes_std)]
-        # dump with resolution & doc_rank in filename
-        with open(
-                os.path.join(
-                    param['paths']['outdir'],
-                    f"prototypes_{param['prototypes']['resolution']}_{param['prototypes']['doc_rank']}.ndjson"),
-                'w') as fout:
-            ndjson.dump(prot_docs, fout)
+
 
     else:
         # no prototypes = extract all document vectors
@@ -215,13 +210,20 @@ def main(param):
         prot_cossim = rh_noproto.find_doc_cossim(valid_subset_ids, n_topics=100)
         prot_docs = rh_noproto.find_documents(valid_subset_ids)
 
-        # dump with only resolution in filename
-        with open(
-                os.path.join(
-                    param['paths']['outdir'],
-                    f"prototypes_{param['prototypes']['resolution']}.ndjson"),
-                'w') as fout:
-            ndjson.dump(prot_docs, fout)
+
+    # dump section
+    # paths
+    path_prototypes = os.path.join(param['paths']['outdir'], "prototypes.ndjson")
+    path_vector = os.path.join(param['paths']['outdir'], "vectors.npy")
+    path_cossim = os.path.join(param['paths']['outdir'], "cossims.npy")
+    # dump prototypes
+    with open(path_prototypes, 'w') as fout:
+        ndjson.dump(prot_docs, fout)
+    # dump doc2vec representations
+    np.save(path_vector, prot_vectors)
+    # dump cosine similarities to topic centroids
+    np.save(path_cossim, prot_cossim)
+    
 
     msg.good('done (prototypes, vectors)')
 
@@ -262,7 +264,7 @@ def main(param):
         )
 
         # fit lm
-        lm = LinearRegression().fit(X=zn, y=zr)
+        lm = LinearRegression(fit_intercept=False).fit(X=zn, y=zr)
         # track fitted parameters
         regression_res = {
             'window': w,
