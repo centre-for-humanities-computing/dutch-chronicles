@@ -1,0 +1,21 @@
+paths:
+  top2vec: "../models/top2vec/top2vecmodel_220504"
+  primitives: "../data/primitives_220503/primitives_corrected_daily.ndjson"
+  outdir: '../models/220815_fulldocs_long/'
+
+filter:
+  min_year: 1500
+  max_year: 1820
+  min_nchar: 1000
+  max_nchar: 10000
+
+representation:
+  softmax: True
+  export_vec: True
+  export_docsim: True
+
+prototypes:
+  find_prototypes: False
+
+novelty:
+  windows: [1, 5, 10, 20, 30, 40, 50]
