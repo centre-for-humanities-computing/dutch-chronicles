@@ -1,7 +1,7 @@
 paths:
-  top2vec: "../models/top2vec/top2vecmodel_220504"
-  primitives: "../data/primitives_220503/primitives_corrected_daily.ndjson"
-  outdir: '../models/220815_fulldocs_day/'
+  top2vec: "models/top2vec/top2vecmodel_220504"
+  primitives: "data/primitives_220503/primitives_corrected_daily.ndjson"
+  outdir: 'models/220815_fulldocs_day/'
 
 filter:
   min_year: 1500
