@@ -78,6 +78,7 @@ import os
 import sys
 import yaml
 import argparse
+from pathlib import Path
 
 import ndjson
 import numpy as np
@@ -88,12 +89,30 @@ from top2vec import Top2Vec
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
 
-sys.path.append('../chronicles')
+sys.path.append('..')
 from chronicles.representation import RepresentationHandler
 from chronicles.misc import parse_dates
 from chronicles.entropies import InfoDynamics
 from chronicles.entropies.metrics import jsd, kld, cosine_distance
 from chronicles.util import softmax
+
+
+def get_base_path():
+    """
+    Find where the script is being run from for file imports
+    """
+    CWD = Path.cwd()
+    cwd_top = Path.cwd().parts[-1]
+    if cwd_top.endswith('application') or cwd_top.endswith('chronicles'):
+        BASEPATH = CWD.joinpath('../../')
+    elif cwd_top.endswith('src'):
+        BASEPATH = CWD.joinpath('../')
+    elif cwd_top.endswith('dutch-chronicles'):
+        BASEPATH = CWD
+    else:
+        raise NotImplementedError(f'Cannot run novelty_signal.py from {str(CWD)}')
+
+    return BASEPATH
 
 
 def main(param):
@@ -114,10 +133,18 @@ def main(param):
         vectors.npy
             document representations, as doc2vec vectors
     """
-    # load resources
-    model = Top2Vec.load(param['paths']['top2vec'])
+    # find path
+    BASEPATH = get_base_path()
 
-    with open(param['paths']['primitives']) as fin:
+    # initialize output folder
+    outdir = BASEPATH.joinpath(param['paths']['outdir'])
+    if not outdir.exists():
+        outdir.mkdir()
+
+    # load resources
+    model = Top2Vec.load(BASEPATH.joinpath(param['paths']['top2vec']))
+
+    with open(BASEPATH.joinpath(param['paths']['primitives'])) as fin:
         primitives = ndjson.load(fin)
 
     # parse dates & get metadata of the subset
@@ -228,10 +255,10 @@ def main(param):
 
     # dump section
     # paths
-    path_prototypes = os.path.join(
-        param['paths']['outdir'], "prototypes.ndjson")
-    path_vector = os.path.join(param['paths']['outdir'], "vectors.npy")
-    path_cossim = os.path.join(param['paths']['outdir'], "cossims.npy")
+    path_prototypes = BASEPATH.joinpath(param['paths']['outdir']).joinpath("prototypes.ndjson")
+    path_vector = BASEPATH.joinpath(param['paths']['outdir']).joinpath("vectors.npy")
+    path_cossim = BASEPATH.joinpath(param['paths']['outdir']).joinpath("cossims.npy")
+
     # dump prototypes
     with open(path_prototypes, 'w') as fout:
         ndjson.dump(prot_docs, fout)
@@ -263,7 +290,7 @@ def main(param):
         im_vectors.fit_save(
             meas=jsd,
             slice_w=False,
-            path=os.path.join(param['paths']['outdir'], f'novelty_w{w}.ndjson')
+            path=BASEPATH.joinpath(param['paths']['outdir']).joinpath(f'novelty_w{w}.ndjson')
         )
 
         # track system state at different windows
@@ -287,7 +314,8 @@ def main(param):
         system_states.append(regression_res)
         print(f'beta: {lm.coef_[0][0]}')
 
-    with open(os.path.join(param['paths']['outdir'], 'infodynamics_system_states.ndjson'), 'w') as fout:
+    path_sys_state = BASEPATH.joinpath(param['paths']['outdir']).joinpath('infodynamics_system_states.ndjson')
+    with open(path_sys_state, 'w') as fout:
         ndjson.dump(system_states, fout)
 
     msg.good('done (infodynamics)')
@@ -302,8 +330,5 @@ if __name__ == '__main__':
     with open(args['yml']) as fin:
         param = yaml.safe_load(fin)
 
-    # init output folder
-    if not os.path.exists(param['paths']['outdir']):
-        os.mkdir(param['paths']['outdir'])
-
+    # run
     main(param)
