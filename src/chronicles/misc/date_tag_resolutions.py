@@ -1,4 +1,4 @@
-'''
+"""
 In a parsed file with primitives, clean the datetag so that
 - only events with daily resolution are considered
 - only one date-tag per event is allowed
@@ -6,12 +6,9 @@ In a parsed file with primitives, clean the datetag so that
 Arbitrary rule for selecting representative date-tags:
 first date-tag with daily resolution is considered representative of the event.
 
-Uncertainity of how representative a selected date-tag is will 
-be tracked in the newly created 'date_uncertainity' field
-
-TODO in the future
-- add monthly resolution events to the mix
-'''
+Uncertainty of how representative a selected date-tag is will
+be tracked in the newly created 'date_uncertainty' field
+"""
 
 import re
 import ndjson
@@ -48,20 +45,20 @@ def extract_daily_tag(date_tag_list):
         day_id = resolutions.index('day')
         clean_date_tag = date_tag_list[day_id]
 
-        # date-tag certainity
+        # date-tag certainty
         # highest degree – only one tag and it's day
         if len(resolutions) == 1 and all(r == 'day' for r in resolutions):
-            uncertainity = 'unambiguous'
+            uncertainty = 'unambiguous'
         # multiple daily tags in a single doc
         elif len(resolution) > 1 and all(r == 'day' for r in resolutions):
-            uncertainity = 'multiple day events in document'
+            uncertainty = 'multiple day events in document'
         # multiple resolutions in a single doc
         elif len(resolutions) > 1 and not all(r == 'day' for r in resolutions):
-            uncertainity = 'varying resolutions'
+            uncertainty = 'varying resolutions'
         else:
-            uncertainity = 'unknown degree'
+            uncertainty = 'unknown degree'
 
-        return clean_date_tag, uncertainity
+        return clean_date_tag, uncertainty
 
     else:
         return None, None
@@ -72,12 +69,12 @@ def main(primitives):
     primitives_daily = []
     for doc in primitives:
         # find day tag
-        clean_date_tag, uncertainity = extract_daily_tag(doc['date'])
+        clean_date_tag, uncertainty = extract_daily_tag(doc['date'])
 
         # if day tag is available
         if clean_date_tag:
             doc['clean_date'] = clean_date_tag
-            doc['date_uncertainity'] = uncertainity
+            doc['date_uncertainty'] = uncertainty
             primitives_daily.append(doc)
         # if no day tag is found, skip document
         else:

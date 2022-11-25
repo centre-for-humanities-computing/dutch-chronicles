@@ -64,7 +64,7 @@ def parse_dates(data: Union[List[str], pd.DataFrame], inplace=False, df=None):
         append date column to an existing dataframe?
     df : pd.DataFrame
         if inplace, dates will be appended to this df
-    
+
     '''
     weeks = add_week(data)
     years, months, days = split_date(data)
