@@ -93,12 +93,3 @@ def test_one_title_per_doc():
         n_title_fields_corpus += len(title_tags)
 
     assert len(xml_paths) == n_title_fields_corpus
-
-
-# def test_linebreaks():
-#     '''
-#     Have multi-line words been joined? ¬
-
-#     Some chronicles were already digitized (no line breaks present).
-#     '''
-#     pass
