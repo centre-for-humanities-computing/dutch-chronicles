@@ -1,19 +1,20 @@
-# %%
+"""
+Collect output files form application.novelty_signal into a single file: signal.csv
+"""
+
 import os
+import sys
 
 import ndjson
 import numpy as np
 import pandas as pd
-
 import umap
 
-import sys
-sys.path.append('../chronicles')
-from misc import parse_dates
-from entropies.afa import adaptive_filter
+sys.path.append('../src')
+from chronicles.entropies.afa import adaptive_filter
+from chronicles.misc import parse_dates
 
 
-# %%
 def collect_results_df(analysis_dir, w, span=64):
 
     # docs
@@ -39,7 +40,7 @@ def collect_results_df(analysis_dir, w, span=64):
     # prototypes
     # dates
     prototypes = parse_dates(
-            prototypes['clean_date'], inplace=True, df=prototypes)
+        prototypes['clean_date'], inplace=True, df=prototypes)
     # character count
     prototypes['n_char'] = prototypes['text'].str.len()
 
@@ -49,7 +50,8 @@ def collect_results_df(analysis_dir, w, span=64):
     # novelty processing
     # smoothing of signal
     for var_name in ['novelty', 'transience', 'resonance']:
-        novelty[f'{var_name}_afa'] = adaptive_filter(novelty[var_name], span=span)
+        novelty[f'{var_name}_afa'] = adaptive_filter(
+            novelty[var_name], span=span)
 
     # merging
     signal = prototypes.copy()
@@ -63,18 +65,9 @@ def collect_results_df(analysis_dir, w, span=64):
     signal.to_csv(os.path.join(analysis_dir, 'signal.csv'), index=False)
 
 
-# %%
-collect_results_df(analysis_dir = '../models/220815_fulldocs_day', w = 30)
-
-# %%
-collect_results_df(analysis_dir = '../models/220815_prototypes_day', w = 30)
-
-# %%
-collect_results_df(analysis_dir = '../models/220815_prototypes_week', w = 30)
-
-# %%
-collect_results_df(analysis_dir = '../models/220815_prototypes_year', w = 30, span=52)
-
-# %%
-collect_results_df(analysis_dir = '../models/220815_fulldocs_long', w = 30)
-# %%
+collect_results_df(analysis_dir='../models/220815_fulldocs_day', w=30)
+collect_results_df(analysis_dir='../models/220815_prototypes_day', w=30)
+collect_results_df(analysis_dir='../models/220815_prototypes_week', w=30)
+collect_results_df(
+    analysis_dir='../models/220815_prototypes_year', w=30, span=52)
+collect_results_df(analysis_dir='../models/220815_fulldocs_long', w=30)
