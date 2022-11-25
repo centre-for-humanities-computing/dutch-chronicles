@@ -1,8 +1,9 @@
-''' 
-Adaptive Fluctuation Analysis 
+"""
+Adaptive Fluctuation Analysis
 
-Quick start with simulated data
---------------------------------
+
+Usage example
+-------------
 
 ```
 import numpy as np
@@ -20,7 +21,14 @@ plt.plot(example_weak_smooth, c='blue')
 plt.plot(example_strong_smooth, c='red')
 
 ```
-'''
+
+Source
+------
+Minimal refactoring of old code from the Centre for Humanities Computing
+https://github.com/centre-for-humanities-computing/newsFluxus/blob/master/src/saffine/detrending_coeff.py
+https://github.com/centre-for-humanities-computing/newsFluxus/blob/master/src/saffine/detrending_method.py
+https://github.com/centre-for-humanities-computing/newsFluxus/blob/master/src/saffine/multi_detrending.py
+"""
 
 import numpy as np
 
@@ -60,7 +68,6 @@ def detrending_method(data, seg_len, fit_order):
 
     for seg_index in range(1, 2):
         # left trend
-        #seg_index = 1
 
         xi = np.arange(1 + (seg_index - 1) * (seg_len - 1),
                        seg_index * (seg_len - 1) + 2)
@@ -200,7 +207,6 @@ def detrending_method(data, seg_len, fit_order):
 
     for seg_index in range(2, int((data_len - 1) / (seg_len - 1))):
         # left_trend
-        #seg_index = 1
         xi = np.arange((seg_index - 1) * (seg_len - 1) +
                        1, seg_index * (seg_len - 1) + 2)
         xi_left = np.mat(xi)
@@ -244,11 +250,10 @@ def detrending_method(data, seg_len, fit_order):
         record_y = np.hstack((record_y, xx_left[0, 1: np.shape(xx_left)[
                              1]], xx_right[0, 1: np.shape(xx_right)[1]]))
 
-# last part of data
+    # last part of data
 
     for seg_index in range(int((data_len - 1) / (seg_len - 1)), int((data_len - 1) / (seg_len - 1)) + 1):
         # left trend
-        #seg_index = 1
 
         xi = np.arange((seg_index - 1) * (seg_len - 1) +
                        1, seg_index * (seg_len - 1) + 2)
@@ -382,7 +387,8 @@ def multi_detrending(y, step_size, q, order):
 
             result[j, k-1] = Sum[0, 0] ** (1 / q[0, j - 1])
 
-            # result(j + 1,k) = (sum(abs(detrend_data - mean(detrended_data))) **q[j-1] / ((shape(detrended_data)[0] - 1) ** (1/q[j-1]))
+            # `result(j + 1,k) = (sum(abs(detrend_data - mean(detrended_data))) **q[j-1] /
+            # ((shape(detrended_data)[0] - 1) ** (1/q[j-1]))`
             # earlier analysis suggests that without removing mean yield
             # more accurate estimate of H values
 
@@ -394,13 +400,9 @@ def multi_detrending(y, step_size, q, order):
 
 
 def adaptive_filter(y, span=56):
-    #if len(y) % 2:
-    #   y=y[:-1]
 
     w = int(4 * np.floor(len(y)/span) + 1)
     y_dt = np.mat([float(j) for j in y])
     _, y_smooth = detrending_method(y_dt, w, 1)
     
     return y_smooth.T
-
-# %%

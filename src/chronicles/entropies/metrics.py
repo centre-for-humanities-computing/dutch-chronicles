@@ -1,8 +1,6 @@
-'''
+"""
 Relative entropy measures
-    taken from https://github.com/centre-for-humanities-computing/newsFluxus/blob/master/src/tekisuto/metrics/entropies.py
-    commit 1fb16bc91b99716f52b16100cede99177ac75f55
-'''
+"""
 
 import numpy as np
 from scipy import stats
@@ -14,7 +12,7 @@ def kld(p, q):
     p = np.asarray(p, dtype=np.float)
     q = np.asarray(q, dtype=np.float)
 
-    return np.sum(np.where(p != 0, (p-q) * np.log10(p / q), 0))
+    return np.sum(np.where(p != 0, (p-q) * np.log2(p / q), 0))
 
 
 def jsd(p, q, base=2):
@@ -31,7 +29,7 @@ def jsd(p, q, base=2):
 def cosine_distance(p, q):
     '''Cosine distance for two vectors
     '''
-    
+
     p, q = np.asarray(p), np.asarray(q)
 
     dot_prod = np.dot(p, q)

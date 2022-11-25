@@ -1,11 +1,13 @@
 """
-Class for estimation of information dynamics of time-dependent probabilistic document representations
-    taken from https://github.com/centre-for-humanities-computing/newsFluxus/blob/master/src/tekisuto/models/infodynamics.py
-    commit 1fb16bc91b99716f52b16100cede99177ac75f55
+Class for estimation of information dynamics of time-dependent probabilistic document representations.
+
+This method will be deprecated. New implementation can be found in
+https://github.com/centre-for-humanities-computing/infodynamics/
 """
 import json
 import numpy as np
 from .metrics import kld, jsd
+
 
 class InfoDynamics:
     def __init__(self, data, time, window=3, weight=0, sort=False, normalize=False):
@@ -21,52 +23,52 @@ class InfoDynamics:
         self.weight = weight
 
         if sort:
-            self.data = np.array([text for _,text in sorted(zip(time, data))])
+            self.data = np.array([text for _, text in sorted(zip(time, data))])
             self.time = sorted(time)
         else:
             self.data = np.array(data)
             self.time = time
 
         self.m = self.data.shape[0]
-    
+
         if normalize:
             data = data / data.sum(axis=1, keepdims=True)
-        
+
     def novelty(self, meas=kld):
         N_hat = np.zeros(self.m)
         N_sd = np.zeros(self.m)
         for i, x in enumerate(self.data):
-            submat = self.data[(i - self.window):i,]
+            submat = self.data[(i - self.window):i, ]
             tmp = np.zeros(submat.shape[0])
             if submat.any():
                 for ii, xx in enumerate(submat):
                     tmp[ii] = meas(x, xx)
             else:
                 tmp = np.zeros([self.window]) + self.weight
-            
+
             N_hat[i] = np.mean(tmp)
             N_sd[i] = np.std(tmp)
 
         self.nsignal = N_hat
         self.nsigma = N_sd
-    
+
     def transience(self, meas=kld):
         T_hat = np.zeros(self.m)
         T_sd = np.zeros(self.m)
         for i, x in enumerate(self.data):
-            submat = self.data[i+1:(i + self.window + 1),]
+            submat = self.data[i + 1:(i + self.window + 1), ]
             tmp = np.zeros(submat.shape[0])
             if submat.any():
                 for ii, xx in enumerate(submat):
                     tmp[ii] = meas(x, xx)
             else:
                 tmp = np.zeros([self.window])
-            
+
             T_hat[i] = np.mean(tmp)
             T_hat[-self.window:] = np.zeros([self.window]) + self.weight
             T_sd[i] = np.std(tmp)
-        
-        self.tsignal = T_hat  
+
+        self.tsignal = T_hat
         self.tsigma = T_sd
 
     def resonance(self, meas=kld):
