@@ -1,7 +1,12 @@
-''' 
-'''
+"""
+Class for extracting prototypes and operations with document representations.
+
+Requires: document representations acquired with Top2Vec & document IDs allocated in parsing
+(chronicles.parser.give_ids)
+"""
+
+from Typing import List
 import numpy as np
-import ndjson
 from wasabi import msg
 
 from sklearn.metrics import pairwise_distances
@@ -9,11 +14,40 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from top2vec import Top2Vec
 
-from entropies.metrics import jsd, kld
-
 
 class RepresentationHandler:
-    def __init__(self, model, primitives, tolerate_invalid_ids=False):
+    """
+    Parameters
+    ----------
+    model : top2vec.Top2Vec
+        fitted Top2Vec model
+    primitives : List[dict]
+        input documents (stored in new line json).
+        Every document is a dict.
+
+    tolerate_invalid_ids : bool
+        If Flase, only document IDs found in self.model will be returned, the rest will be
+        ignored & added to self.missing_docid_history.
+        If True, invalid IDs will cause an error.
+
+    Attributes
+    ----------
+    doc_id2vectoridx : dict
+        mapping of document id to model index
+    doc_id2primidx: dict
+        mapping of document id to primitive index.
+        Automatically generated.
+    primitives: List[dict]
+        input documents
+    model : top2vec.Top2Vec
+        fitted Top2Vec model
+    n_topics : int
+        number of topics found in self.model
+    missing_docid_history : List
+        list of IDs that were not found in self.model.
+    """
+
+    def __init__(self, model: Top2Vec, primitives: List[dict], tolerate_invalid_ids=False):
 
         self.doc_id2vectoridx = model.doc_id2index
         self.doc_id2primidx = {doc['id']: i for i,
@@ -24,11 +58,15 @@ class RepresentationHandler:
         self.modeldv = model.model.dv
 
         self.n_topics = model.get_num_topics()
-        self.coerce_key_errors = tolerate_invalid_ids
+        self._coerce_key_errors = tolerate_invalid_ids
         self.missing_docid_history = []
 
+    @staticmethod
+    def _get_2d_projection(vectors: np.array) -> np.array:
+        return PCA(n_components=2).fit_transform(vectors)
+
     def _warning_coerce_key_errors(self):
-        if self.coerce_key_errors:
+        if self._coerce_key_errors:
             msg.warn(
                 'Warning: RepresentationHandler.greedy set to False. ' +
                 'Invalid doc_ids will be ignored. ' +
@@ -38,7 +76,10 @@ class RepresentationHandler:
         else:
             pass
 
-    def find_doc_vector(self, doc_id):
+    def find_doc_vector(self, doc_id: int) -> np.array:
+        """
+        Given doc_id, find it's Top2Vec representation
+        """
 
         try:
             return self.modeldv[
@@ -46,7 +87,7 @@ class RepresentationHandler:
             ]
 
         except KeyError as error_doc_id_not_found:
-            if self.coerce_key_errors:
+            if self._coerce_key_errors:
                 # keep track of invalid doc_ids
                 self.missing_docid_history.append(doc_id)
                 # skip doc_id
@@ -54,7 +95,10 @@ class RepresentationHandler:
             else:
                 raise KeyError(f'document {doc_id} not found in model.')
 
-    def find_doc_vectors(self, doc_ids):
+    def find_doc_vectors(self, doc_ids: List[int]) -> np.array:
+        """
+        Iterate over document IDs to find multiple Top2Vec representations
+        """
 
         if not isinstance(doc_ids, list):
             doc_ids = [doc_ids]
@@ -69,7 +113,10 @@ class RepresentationHandler:
 
         return vectors
 
-    def find_document(self, doc_id):
+    def find_document(self, doc_id: int) -> dict:
+        """
+        Given doc_id, find a document (observation with metadata)
+        """
 
         try:
             return self.primitives[
@@ -77,7 +124,7 @@ class RepresentationHandler:
             ]
 
         except KeyError as error_doc_id_not_found:
-            if self.coerce_key_errors:
+            if self._coerce_key_errors:
                 # keep track of invalid doc_ids
                 self.missing_docid_history.append(doc_id)
                 # skip doc_id
@@ -85,7 +132,10 @@ class RepresentationHandler:
             else:
                 raise KeyError(f'document {doc_id} not found in primitives.')
 
-    def find_documents(self, doc_ids):
+    def find_documents(self, doc_ids: List[int]):
+        """
+        Iterate over document IDs to find multiple documents
+        """
 
         if not isinstance(doc_ids, list):
             doc_ids = [doc_ids]
@@ -97,20 +147,16 @@ class RepresentationHandler:
 
         return documents
 
-    def filter_invalid_doc_ids(self, doc_ids):
-        '''Try to find document in both primitives and model.
-        Returns a list of validated doc_ids
+    def filter_invalid_doc_ids(self, doc_ids: List[int]) -> List[int]:
+        """
+        Try to find document in both primitives and model.
 
-        Parameters
-        ----------
-        doc_ids : List[int]
-            doc_ids to check
+        Args:
+            doc_ids : document IDs to check
 
-        Returns
-        -------
-        List[int]
-            validated doc_ids
-        '''
+        Returns:
+            validated_doc_ids : document IDs present in both self.primitives & self.model
+        """
 
         validated_doc_ids = []
         for doc_id in doc_ids:
@@ -124,13 +170,25 @@ class RepresentationHandler:
 
         return validated_doc_ids
 
-    def find_doc_cossim(self, doc_ids, n_topics=None):
+    def find_doc_cossim(self, doc_ids: List[int], n_topics=None) -> np.array:
+        """
+        Given doc_ids, find the cosine similarities between document vectors and topic centroids.
+
+        Args:
+            doc_ids: document IDs to find representations for
+            n_topics: desired number of topic centroids (aka representation dimensionality).
+                      If specified, hdbscan implemented in Top2Vec will be used to merge topics.
+                      By default, None, meaning follow the number of topics the model was originally fitted on.
+
+        Returns:
+            representations: cosine similarities of shape (doc_ids, n_topics)
+        """
 
         if not isinstance(doc_ids, list):
             doc_ids = [doc_ids]
 
         # filter invalid doc_ids if approach is greedy
-        if not self.coerce_key_errors:
+        if not self._coerce_key_errors:
             doc_ids = self.filter_invalid_doc_ids(doc_ids)
 
         # by default, get n_topics same as the model
@@ -159,7 +217,13 @@ class RepresentationHandler:
 
         return representations
 
-    def get_primitives_and_vectors(self, doc_ids):
+    def get_primitives_and_vectors(self, doc_ids: List[int]) -> List[dict]:
+        """
+        Get a subset of primitives enriched with *vector* representation of documents
+
+        Returns:
+            event_selection: records of documents with an extra key-value pair 'doc_vec'
+        """
 
         event_selection = []
         for doc_id in doc_ids:
@@ -172,7 +236,19 @@ class RepresentationHandler:
 
         return event_selection
 
-    def get_primitives_and_cossims(self, doc_ids, n_topics=None):
+    def get_primitives_and_cossims(self, doc_ids: List[int], n_topics=None) -> List[dict]:
+        """
+        Get a subset of primitives enriched with *cosine similarity* representation of documents
+
+        Args:
+            doc_ids: document IDs to find representations for
+            n_topics: desired number of topic centroids (aka representation dimensionality).
+                      If specified, hdbscan implemented in Top2Vec will be used to merge topics.
+                      By default, None, meaning follow the number of topics the model was originally fitted on.
+
+        Returns:
+            event_selection: records of documents with an extra key-value pair 'doc_cossim'
+        """
 
         if not n_topics:
             n_topics = self.n_topics
@@ -188,16 +264,28 @@ class RepresentationHandler:
 
         return event_selection
 
-    @staticmethod
-    def get_2d_projection(vectors):
-        return PCA(n_components=2).fit_transform(vectors)
+    def prototypes_by_avg_distance(self, doc_ids, doc_rank=0, metric='cosine', reduce_dim=False):
+        """
+        Find a prototype document in a subset.
+        Prototype is the document with the lowest average distance to other documents in the subset.
 
-    def by_avg_distance(self, doc_ids, doc_rank=0, metric='cosine', reduce_dim=False):
+        Args:
+            doc_ids: List[int]
+            doc_rank: desired document rank of a prototype (0 = document with the lowest avg distance)
+            metric: distance metric to use for calculating distances
+            reduce_dim: find prototypes using a 2D representation of the subset?
+
+        Returns:
+            prototype_doc_id: int
+                ID of prototype document
+            uncertainty: float
+                standard deviation of the prototypical document's distances to other docs.
+        """
 
         vectors = self.find_doc_vectors(doc_ids)
 
         if reduce_dim:
-            vectors = self.get_2d_projection(vectors)
+            vectors = self._get_2d_projection(vectors)
 
         # calc pariwise distances
         d = pairwise_distances(vectors, metric=metric)
@@ -208,18 +296,32 @@ class RepresentationHandler:
 
         # index of document at desired rank
         avg_d_argsort = np.argsort(avg_d)
-        doc_idx = int(np.argwhere(avg_d_argsort == doc_rank))
+        doc_idx = int(avg_d_argsort[doc_rank])
 
         # get id of prototypical doc
         prototype_doc_id = doc_ids[doc_idx]
-        uncertainity = std_d[doc_idx]
+        uncertainty = std_d[doc_idx]
 
-        return prototype_doc_id, uncertainity
+        return prototype_doc_id, uncertainty
 
-    def by_distance_to_centroid(self, doc_ids, doc_rank=0):
+    def prototypes_by_distance_to_centroid(self, doc_ids, doc_rank=0):
+        """
+        Find a prototype document in a subset.
+        Prototype is the document with the lowest distance to subset centroid found using KMeans.
+
+        Args:
+            doc_ids: List[int]
+            doc_rank: desired document rank of a prototype (0 = document with the lowest distance to centroid)
+
+        Returns:
+            prototype_doc_id: int
+                ID of prototype document
+            uncertainty: float
+                standard deviation of the prototypical document's distances to other docs.
+        """
 
         vectors = self.find_doc_vectors(doc_ids)
-        vecs_2d = self.get_2d_projection(vectors)
+        vecs_2d = self._get_2d_projection(vectors)
 
         km = KMeans(n_clusters=1)
         km.fit(vecs_2d)
@@ -232,22 +334,10 @@ class RepresentationHandler:
 
         # index of document at desired rank
         d_centroid_argsort = np.argsort(d_centroid)[0]
-        doc_idx = int(np.argwhere(d_centroid_argsort == doc_rank))
+        doc_idx = int(d_centroid_argsort[doc_rank])
 
         # get id of prototypical doc
         prototype_doc_id = doc_ids[doc_idx]
-        uncertainity = km.inertia_
+        uncertainty = km.inertia_
 
-        return prototype_doc_id, uncertainity
-
-    def by_relative_entropy(self, doc_ids, doc_rank=0):
-
-        vectors = self.find_doc_vectors(doc_ids)
-        # normalize vectors to be probability distributions
-        vectors_prob = np.divide(vectors, vectors.sum())
-
-        # option 1: pairwise relative entropy
-        d = pairwise_distances(vectors_prob, metric=jsd)
-        # option 2: jsd(doc | avg jsd of the rest)
-
-        pass
+        return prototype_doc_id, uncertainty
