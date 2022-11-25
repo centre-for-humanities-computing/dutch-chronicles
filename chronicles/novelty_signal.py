@@ -70,7 +70,6 @@ novelty:
 
 '''
 
-# %%
 import os
 import yaml
 import argparse
@@ -195,7 +194,6 @@ def main(param):
         [doc.update({'uncertainity': float(std)})
          for doc, std in zip(prot_docs, prototypes_std)]
 
-
     else:
         # no prototypes = extract all document vectors
 
@@ -207,13 +205,14 @@ def main(param):
         valid_subset_ids = rh_noproto.filter_invalid_doc_ids(subset_ids)
 
         prot_vectors = rh_noproto.find_doc_vectors(valid_subset_ids)
-        prot_cossim = rh_noproto.find_doc_cossim(valid_subset_ids, n_topics=100)
+        prot_cossim = rh_noproto.find_doc_cossim(
+            valid_subset_ids, n_topics=100)
         prot_docs = rh_noproto.find_documents(valid_subset_ids)
-
 
     # dump section
     # paths
-    path_prototypes = os.path.join(param['paths']['outdir'], "prototypes.ndjson")
+    path_prototypes = os.path.join(
+        param['paths']['outdir'], "prototypes.ndjson")
     path_vector = os.path.join(param['paths']['outdir'], "vectors.npy")
     path_cossim = os.path.join(param['paths']['outdir'], "cossims.npy")
     # dump prototypes
@@ -223,15 +222,12 @@ def main(param):
     np.save(path_vector, prot_vectors)
     # dump cosine similarities to topic centroids
     np.save(path_cossim, prot_cossim)
-    
 
     msg.good('done (prototypes, vectors)')
-
 
     # softmax on vectors
     if param['representation']['softmax']:
         prot_vectors = np.array([softmax(vec) for vec in prot_vectors])
-
 
     # relative entropy experiments
     system_states = []

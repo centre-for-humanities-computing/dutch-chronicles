@@ -4,6 +4,7 @@ lda/*.npy
 models/
 fig/
 for_kate/
+TMP*
 
 # macos
 .DS_Store
