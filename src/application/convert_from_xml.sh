@@ -23,28 +23,28 @@ fi
 ###
 
 echo "Parsing corpus_annotated"
-python parser/xml_parsing.py \
+python ../chronicles/parser/xml_parsing.py \
     -d "${dir_corpus_annotated}" \
     -s 1 \
     -o "../../chronicling-topics/primitives_${run_when}/primitives_annotated.ndjson"
 
 echo "Parsing corpus_corrected"
-python parser/xml_parsing.py \
+python ../chronicles/parser/xml_parsing.py \
     -d "${dir_corpus_corrected}" \
     -s 1 \
     -o "../../chronicling-topics/primitives_${run_when}/primitives_corrected.ndjson"
 
 echo "Generating IDs"
-python parser/give_ids.py \
+python ../chronicles/parser/give_ids.py \
     -ap "../../chronicling-topics/primitives_${run_when}/primitives_annotated.ndjson" \
     -cp "../../chronicling-topics/primitives_${run_when}/primitives_corrected.ndjson"
 
 echo "Cleaning date tags on corrected corpus"
-python misc/date_tag_resolutions.py \
+python ../chronicles/misc/date_tag_resolutions.py \
     -i "../../chronicling-topics/primitives_${run_when}/primitives_corrected.ndjson" \
     -o "../../chronicling-topics/primitives_${run_when}/primitives_corrected_daily.ndjson"
 
 echo "Cleaning date tags on annotated corpus"
-python misc/date_tag_resolutions.py \
+python ../chronicles/misc/date_tag_resolutions.py \
     -i "../../chronicling-topics/primitives_${run_when}/primitives_annotated.ndjson" \
     -o "../../chronicling-topics/primitives_${run_when}/primitives_annotated_daily.ndjson"

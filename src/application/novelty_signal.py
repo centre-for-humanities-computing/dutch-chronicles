@@ -1,23 +1,28 @@
-''' 
-Combine top2vec model, dataset of primitives.
-Find prototypes.
-Calculate novelty at different windows.
-Export a results.
+"""
+Pipeline for calculating the novelty signal.
+Assumes Top2Vec model has been fitted.
+Parameters for the analysis are inputted via a YAML config file (see config/)
+
+Steps:
+1) Combine top2vec model, dataset of primitives.
+2) Find prototypes.
+3) Calculate novelty at different windows.
+4) Export.
 
 
 Parameters (yaml)
 -----------------
-paths: 
+paths:
 (loading necessary resources)
 
     top2vec : str
         path a trained top2vec model
     primitives : str
         path to documents
-        assumes .ndjson & existing fields 
-        `text`:str,
-        `id`:str,
-        `clean_date`:str
+        assumes .ndjson & existing fields:
+            `text`:str,
+            `id`:str,
+            `clean_date`:str
     outdir : str
         path to directory in which results will be dumped
         and new subfolders created
@@ -48,7 +53,7 @@ prototypes:
 (how to pick prototypical documents)
 
     find_prototypes : bool
-        switch to bypass prototype searching 
+        switch to bypass prototype searching
         if True, only prototypical documents will be used for novelty calculation
         if False, all documents are used.
     resolution : str
@@ -67,10 +72,10 @@ novelty:
     windows : List[int]
         w parameters to iterate though in the novelty calculation.
         w is the number of preceeding/following documents the focus document should be compared to.
-
-'''
+"""
 
 import os
+import sys
 import yaml
 import argparse
 
@@ -83,15 +88,32 @@ from top2vec import Top2Vec
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
 
-from representation import RepresentationHandler
-from misc import parse_dates
-from entropies import InfoDynamics
-from entropies.metrics import jsd, kld, cosine_distance
-from entropies.afa import adaptive_filter
-from util import softmax
+sys.path.append('../chronicles')
+from chronicles.representation import RepresentationHandler
+from chronicles.misc import parse_dates
+from chronicles.entropies import InfoDynamics
+from chronicles.entropies.metrics import jsd, kld, cosine_distance
+from chronicles.util import softmax
 
 
 def main(param):
+    """
+    Fit novelty signal.
+
+    Args:
+        param: parameter grid defined in the into docstring
+
+    Exports:
+        novelty_w{WINDOW}.ndjson
+            novelty signal for desired window
+        infodynamics_system_states.ndjson
+            parameters of linear models fitted on different windows
+            predicting resonance from novelty
+        cossims.npy
+            document representations, as cosine similarities to topic centroids
+        vectors.npy
+            document representations, as doc2vec vectors
+    """
     # load resources
     model = Top2Vec.load(param['paths']['top2vec'])
 
@@ -159,7 +181,7 @@ def main(param):
 
             # check for empty group
             if doc_ids:
-                # single document in a group = prototype with 0 uncertainity
+                # single document in a group = prototype with 0 uncertainty
                 if len(doc_ids) == 1:
                     prot_id = doc_ids[0]
                     prot_std = 0
@@ -167,20 +189,15 @@ def main(param):
                 # if doc_rank is higher than group size pick...
                 # ...the last possible document as prototype
                 elif param['prototypes']['doc_rank'] >= len(doc_ids):
-                    prot_id, prot_std = rh_daily.by_avg_distance(
-                        doc_ids,
-                        metric='cosine',
-                        doc_rank=len(doc_ids)-1
-                    )
+                    prot_id, prot_std = rh_daily.prototypes_by_avg_distance(doc_ids, doc_rank=len(doc_ids) - 1,
+                                                                            metric='cosine')
 
                 # any other case (multiple docs in group & doc_rank < group size)
                 # pick doc with desired rank as prototype
                 else:
-                    prot_id, prot_std = rh_daily.by_avg_distance(
-                        doc_ids,
-                        metric='cosine',
-                        doc_rank=param['prototypes']['doc_rank']
-                    )
+                    prot_id, prot_std = rh_daily.prototypes_by_avg_distance(doc_ids,
+                                                                            doc_rank=param['prototypes']['doc_rank'],
+                                                                            metric='cosine')
 
                 prototypes_ids.append(prot_id)
                 prototypes_std.append(prot_std)
@@ -190,8 +207,8 @@ def main(param):
         prot_cossim = rh_daily.find_doc_cossim(prototypes_ids, n_topics=100)
         prot_docs = rh_daily.find_documents(prototypes_ids)
 
-        # add uncertainity to doc dump
-        [doc.update({'uncertainity': float(std)})
+        # add uncertainty to doc dump
+        [doc.update({'uncertainty': float(std)})
          for doc, std in zip(prot_docs, prototypes_std)]
 
     else:
@@ -232,7 +249,6 @@ def main(param):
     # relative entropy experiments
     system_states = []
     for w in tqdm(param['novelty']['windows']):
-
         msg.info(f'infodynamics w {w}')
         # initialize infodyn class
         im_vectors = InfoDynamics(
@@ -277,7 +293,6 @@ def main(param):
     msg.good('done (infodynamics)')
 
 
-# %%
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--yml')

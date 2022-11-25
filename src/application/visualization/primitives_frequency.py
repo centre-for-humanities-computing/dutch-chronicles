@@ -1,6 +1,7 @@
-# %%
+"""
+Create plots
+"""
 import sys
-from turtle import width
 sys.path.append('..')
 
 import datetime as dt
