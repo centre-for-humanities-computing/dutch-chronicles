@@ -1,16 +1,15 @@
-''' 
+"""
 Add IDs to events.
 Overwrites original files!
 Requires both annotated & corrected corpus
-'''
-import os
+"""
 import ndjson
 from tqdm import tqdm
 
 
 def main(prim_anno, prim_corr):
-    '''Give IDs to events:
-    - event 
+    """
+    Give IDs to events
 
     Parameters
     ----------
@@ -24,7 +23,7 @@ def main(prim_anno, prim_corr):
     List[dict], List[dict]
         two files with an added field 'id',
         ids in both files are compatible.
-    '''
+    """
 
     for doc, i in zip(prim_anno, range(len(prim_anno))):
         doc['id'] = i
