@@ -5,7 +5,7 @@ Requires: document representations acquired with Top2Vec & document IDs allocate
 (chronicles.parser.give_ids)
 """
 
-from Typing import List
+from typing import List
 import numpy as np
 from wasabi import msg
 
