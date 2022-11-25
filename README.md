@@ -45,14 +45,24 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Source code of the experiment is organized into has three main steps:  
+    1) parsing XML chronicle files, segment into documents  
+    2) train a top2vec model  
+    3) fit the novelty signal, which includes prototype picking  
+
 ### Parsing XML files
 ```
 cd src/application/
 bash convert_from_xml.sh
 ```
 
+### Train a top2vec model
+```
+cd src/application/
+python topics/top2vec_training.py
+```
+
 ### Novelty signal
-The main analysis was run using:
 ```
 cd src/application/
 python novelty_signal.py --yml config/220815_prototypes_day.yml
