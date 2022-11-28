@@ -1,6 +1,6 @@
 # Chronicling Crises: Event Detection in Early Modern Chronicles from the Low Countries
 
-[Paper](nothing.html)
+[Paper](https://ceur-ws.org/Vol-3290/short_paper4697.pdf)
 
 ## Abstract
 Between the Middle Ages and the nineteenth century, many middle-class Europeans kept a handwritten chronicle, in which they reported on events they considered relevant. Discussed topics varied from records of price fluctuations to local politics, and from weather reports to remarkable gossip. What we do not know yet, is to what extent times of conflict and crises influenced the way in which people dealt with information. We have applied methods from information theory -- dynamics in word usage and measures of relative entropy such as _novelty_ and _resonance_ -- to a corpus of early modern chronicles from the Low Countries (1500--1820) to provide more insight in the way early modern people were coping with information during impactful events. We detect three peaks in the novelty signal, which coincide with times of political uncertainty in the Northern and Southern Netherlands. Topic distributions provided by Top2Vec show that during these times, chroniclers tend to write more and more extensively about an increased variation of topics. 
